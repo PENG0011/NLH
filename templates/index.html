@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accounting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#0b1020;
+            --card:#0f1724;
+            --muted:#9aa4b2;
+            --accent:#7c3aed;
+            --glass: rgba(255,255,255,0.04);
+        }
+        html,body{height:100%;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+        body{background:linear-gradient(180deg,var(--bg),#020617);color:#e6eef8;margin:0}
+        .app-card{background:linear-gradient(180deg,var(--card),#07111b);box-shadow:0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+        .muted{color:var(--muted)}
+        .tab-btn{padding:10px 14px;border-radius:10px;background:transparent;color:var(--muted);border:1px solid transparent;transition:all .18s}
+        .tab-btn:hover{color:#fff;border-color:rgba(124,58,237,0.12);transform:translateY(-2px)}
+        .tab-btn.active{background:linear-gradient(90deg, rgba(124,58,237,0.18), rgba(59,130,246,0.06));color:#fff;box-shadow:0 8px 30px rgba(124,58,237,0.08)}
+        .coin{width:96px;height:96px;perspective:1000px}
+        .coin-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 1s}
+        .coin-face{position:absolute;inset:0;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:800;font-size:20px}
+        .coin-front{background:linear-gradient(180deg,#fff,#f1f5f9);color:#0b1220}
+        .coin-back{background:linear-gradient(180deg,#f8fafc,#e6eef8);color:#0b1220;transform:rotateY(180deg)}
+        .coin.flipY .coin-inner{transform:rotateY(720deg)}
+
+        /* responsive tweaks */
+        .container{max-width:1200px;padding:18px;margin:0 auto}
+        #onlineUsers{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px}
+        .online-card{min-width:78px;width:78px;flex:0 0 auto}
+
+        #leaderboardCards{display:block}
+        #leaderboardList{display:none}
+        #leaderboardListHeader{display:none}
+        @media (max-width: 760px){
+            #leaderboardCards{display:none}
+            #leaderboardList{display:block}
+            #leaderboardListHeader{display:block}
+        }
+
+        /* leaderboard grid: force four columns (Name, Current, Buy-in, Winning) */
+        .leader-grid{
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* left: name/current, right: values block */
+            gap: 8px;
+            align-items: center;
+        }
+        .leader-grid .muted, .leader-grid .text-sm{font-size:0.75rem;color:var(--muted)}
+        .leader-grid .font-bold{font-size:1rem}
+        .leader-grid > div{min-width:0}
+        /* allow name to wrap fully; keep numeric values single-line */
+        .leader-name *{white-space:normal;overflow:visible;text-overflow:unset}
+        .leader-values *{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .leader-name{display:flex;align-items:center;justify-content:space-between;gap:8px}
+        .leader-values{display:grid;grid-auto-flow:column;grid-template-columns:repeat(2,minmax(72px,1fr));gap:8px;justify-items:stretch;align-items:center;width:100%}
+        .leader-values > div{display:flex;justify-content:flex-end}
+        @media (max-width: 420px){
+            .leader-grid{grid-template-columns:1fr;}
+            .leader-name{grid-column:1/-1;margin-bottom:6px}
+            .leader-values{grid-column:1/-1;grid-auto-flow:column;grid-template-columns:repeat(2,1fr);gap:8px}
+        }
+        /* very narrow phones: allow columns to shrink but keep labels visible */
+        @media (max-width: 360px){
+            .leader-grid{grid-template-columns: 1fr 1fr 1fr 1fr; gap:6px}
+            .leader-grid .font-bold{font-size:0.95rem}
+        }
+
+        .table-ellipse{background:linear-gradient(180deg,#062018,#08302a);border-radius:9999px}
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- 登录/注册模态框 -->
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="app-card rounded-lg p-6 w-96">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold" id="authTitle">登录</h2>
+                <button onclick="toggleAuthModal('login')" class="text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+            <div id="authForm">
+                <!-- 登录表单 -->
+                <div id="loginForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">用户名</label>
+                        <input type="text" id="loginUsername" class="w-full px-3 py-2 border rounded">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">密码</label>
+                        <input type="password" id="loginPassword" class="w-full px-3 py-2 border rounded">
+                    </div>
+                    <button onclick="login()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">登录</button>
+                    <p class="mt-2 text-sm">没有账号？<a onclick="toggleAuthModal('register')" class="text-blue-500">注册</a></p>
+                </div>
+                
+                <!-- 注册表单 -->
+                <div id="registerForm" class="hidden">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">用户名</label>
+                        <input type="text" id="regUsername" class="w-full px-3 py-2 border rounded">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">密码</label>
+                        <input type="password" id="regPassword" class="w-full px-3 py-2 border rounded">
+                    </div>
+                    <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">头像（请选择一个表情，唯一）</label>
+                            <div id="avatarPicker" class="flex flex-wrap gap-2 p-2 border rounded bg-gray-100 max-h-40 overflow-y-auto"></div>
+                            <input type="hidden" id="regAvatar" value="default_avatar.png">
+                        </div>
+                    <button onclick="register()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">注册</button>
+                    <p class="mt-2 text-sm">已有账号？<a onclick="toggleAuthModal('login')" class="text-blue-500">登录</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
+    <div id="mainApp" class="hidden container">
+        <!-- Top bar -->
+        <header class="flex items-center justify-between py-4 mb-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-500 text-white text-xl font-bold shadow-lg">R</div>
+                <div>
+                    <div class="text-lg font-semibold">Accounting</div>
+                    <div class="text-sm muted"></div>
+                </div>
+            </div>
+
+            <div class="flex-1 mx-6 hidden md:block">
+                <div class="w-full bg-[rgba(255,255,255,0.03)] rounded-lg py-2 px-4 flex items-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/></svg>
+                    <input placeholder="Search players or sessions" class="w-full bg-transparent outline-none text-sm muted" />
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div id="currentUserContainer" class="flex items-center gap-3">
+                    <div id="currentAvatar" class="w-10 h-10 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.03)]"></div>
+                    <div>
+                        <div id="currentUser" class="text-sm font-medium"></div>
+                        <div class="text-xs muted">online</div>
+                    </div>
+                    <button id="changeAvatarBtn" onclick="openAvatarModal()" class="text-sm px-2 py-1 rounded hidden">Change</button>
+                </div>
+                <button onclick="logout()" class="px-4 py-2 rounded bg-gradient-to-br from-red-500 to-pink-500 text-white shadow-sm">退出</button>
+            </div>
+        </header>
+
+        <!-- Pill Tab导航 -->
+        <nav class="mb-6">
+            <div class="flex flex-wrap gap-2">
+                <button onclick="switchTab('status')" class="tab-btn active">Status</button>
+                <button onclick="switchTab('points')" class="tab-btn">Points</button>
+                <button onclick="switchTab('leaderboard')" class="tab-btn">Leaderboard</button>
+                <button onclick="switchTab('trends')" class="tab-btn">Trends</button>
+                <button onclick="switchTab('seats')" class="tab-btn">Seats</button>
+                <button onclick="switchTab('random')" class="tab-btn">Random</button>
+            </div>
+        </nav>
+
+        <!-- Tab内容 -->
+        <div class="app-card rounded-lg p-6 min-h-[500px]">
+            <!-- Status Tab -->
+            <div id="statusTab" class="tab-content">
+                <h2 class="text-xl font-bold mb-4">在线用户</h2>
+                <div id="onlineUsers" class="grid grid-cols-4 gap-4"></div>
+                <h3 class="text-lg font-bold mt-6 mb-2">用户行为日志</h3>
+                <div id="activityLog" class="border rounded p-2 h-60 overflow-y-auto"></div>
+            </div>
+
+            <!-- Points Tab -->
+            <div id="pointsTab" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">记分管理</h2>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">选择用户</label>
+                        <div id="pointsUserButtons" class="flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">Buy In / Cash Out</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="pointsAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40">
+                            <button onclick="performPointsAction('buy_in')" class="bg-green-500 text-white px-4 py-2 rounded">Buy In</button>
+                            <button onclick="performPointsAction('cash_out')" class="bg-red-500 text-white px-4 py-2 rounded">Cash Out</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">Set Current</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="setCurrentAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40">
+                            <button onclick="performPointsAction('set_current', true)" class="bg-blue-500 text-white px-4 py-2 rounded">Set Current</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">Win / Loss</label>
+                        <div class="flex gap-2 mb-2">
+                            <input type="number" id="wlAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40">
+                            <div id="targetUserButtons" class="flex flex-wrap gap-2"></div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="performWinLoss('win')" class="bg-green-600 text-white px-4 py-2 rounded">Win</button>
+                            <button onclick="performWinLoss('loss')" class="bg-red-600 text-white px-4 py-2 rounded">Loss</button>
+                        </div>
+                    </div>
+
+                <!-- 管理员控制面板 -->
+                <div id="adminControl" class="mt-8 hidden">
+                    <h3 class="text-lg font-bold mb-2">管理员控制</h3>
+                    <button onclick="createNewSession()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mr-2">新建游戏会话</button>
+                    <button onclick="refreshAllData()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mr-2">刷新数据</button>
+                    <button id="manageUsersBtn" onclick="openManageUsers()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mr-2">管理用户</button>
+                    <button onclick="resetAllData()" class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800">⚠️ 清空所有数据</button>
+                </div>
+            </div>
+
+            <!-- Leaderboard Tab -->
+            <div id="leaderboardTab" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">排行榜</h2>
+                <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                    <div class="flex gap-2">
+                        <button onclick="rebalanceScores()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mr-2">重新平衡</button>
+                        <button onclick="revertRebalance()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">撤销平衡</button>
+                    </div>
+                    <span id="totalWinLoss" class="mt-2 sm:mt-0 font-bold"></span>
+                </div>
+
+                <!-- Desktop leaderboard: modern card list -->
+                <div id="leaderboardCards" class="grid gap-3"></div>
+                <!-- Mobile header (labels) -->
+                <div id="leaderboardListHeader" class="leaderboard-list-header hidden mt-2 app-card p-3 rounded-lg mb-3">
+                    <div class="leader-grid muted font-semibold">
+                        <div class="leader-name">
+                            <div>Name</div>
+                            <div class="text-right">Current</div>
+                        </div>
+                        <div class="leader-values">
+                            <div class="text-right">Buy-in</div>
+                            <div class="text-right">Winning</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Mobile cards -->
+                <div id="leaderboardList" class="leaderboard-list mt-3"></div>
+            </div>
+
+            <!-- Trends Tab -->
+            <div id="trendsTab" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">趋势图</h2>
+                <canvas id="trendsChart" class="w-full h-96"></canvas>
+            </div>
+
+            <!-- Seats Tab -->
+            <div id="seatsTab" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">座位分配</h2>
+                <div class="mb-4 flex gap-2 items-center">
+                    <button onclick="generateSeats()" id="generateSeatsBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2 hidden">生成座位</button>
+                    <button onclick="refreshSeats()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">刷新座位</button>
+                    <button onclick="generateSeats()" id="redrawSeatsBtn" class="bg-purple-600 text-white px-3 py-2 rounded hidden">Redraw Seats</button>
+                </div>
+
+                <!-- Table container: moved down and responsive -->
+                <div class="relative w-full flex justify-center items-center mt-16">
+                    <!-- 椭圆桌子: width auto-fits, keeps 2:1 aspect ratio -->
+                    <div id="tableEllipse" class="rounded-full table-ellipse relative" style="width: min(90vw, 600px); aspect-ratio: 2 / 1; padding-top:28px;">
+                        <!-- 座位将动态生成 -->
+                        <div id="seatsContainer" class="absolute inset-0 pointer-events-none"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Random Tab -->
+            <div id="randomTab" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">随机结果生成</h2>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Call的百分比 (%)</label>
+                    <input type="number" id="yesPercentage" min="0" max="100" value="50" class="w-full px-3 py-2 border rounded mb-2">
+                    <button id="coinFlipBtn" onclick="coinFlip()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">开始随机</button>
+                </div>
+                <div id="coinFlipResult" class="mt-4 text-center text-2xl font-bold min-h-[100px] flex justify-center items-center">
+                    <!-- 硬币动画将在这里显示 -->
+                    <div id="coin" class="coin hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentUser = null;
+        let websocket = null;
+        let trendsChart = null;
+        let originalScores = [];
+        // stack of snapshots before each rebalance; pop to undo latest
+        let rebalanceStack = [];
+
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', () => {
+            // 默认显示登录模态框
+            toggleAuthModal('login');
+            
+            // 监听操作类型变化（有防御性检查，避免元素不存在时报错）
+            const pointsActionEl = document.getElementById('pointsAction');
+            if (pointsActionEl) {
+                pointsActionEl.addEventListener('change', () => {
+                    const action = pointsActionEl.value;
+                    const targetContainer = document.getElementById('targetUserContainer');
+                    if (targetContainer) {
+                        if (action === 'win' || action === 'loss') {
+                            targetContainer.classList.remove('hidden');
+                        } else {
+                            targetContainer.classList.add('hidden');
+                        }
+                    }
+                });
+            }
+
+            // ensure manage users button has a listener (defensive)
+            const manageBtn = document.getElementById('manageUsersBtn');
+            if (manageBtn) manageBtn.addEventListener('click', (e) => { try { openManageUsers(); } catch (err) { console.error('openManageUsers error', err); } });
+        });
+
+        // 切换认证表单
+        function toggleAuthModal(type) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const authTitle = document.getElementById('authTitle');
+            
+            if (type === 'login') {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                authTitle.textContent = '登录';
+            } else {
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                authTitle.textContent = '注册';
+                // 加载头像选择器（emoji 列表）
+                loadAvatarPicker();
+            }
+        }
+
+        // 登录
+        async function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `username=${username}&password=${password}`
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                currentUser = data.user;
+                document.getElementById('authModal').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                    document.getElementById('currentUser').textContent = `当前用户: ${currentUser.username}`;
+                    // show avatar and change button
+                    const av = document.getElementById('currentAvatar');
+                    if (currentUser.avatar && currentUser.avatar.indexOf('.') > -1) {
+                        av.innerHTML = `<img src="/static/${currentUser.avatar}" class="w-8 h-8 rounded-full object-cover"/>`;
+                    } else {
+                        av.textContent = currentUser.avatar || '';
+                    }
+                    document.getElementById('changeAvatarBtn').classList.remove('hidden');
+                
+                // 初始化WebSocket
+                initWebSocket();
+                
+                // 加载所有数据
+                loadAllData();
+                
+                // 显示管理员控件
+                if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
+                    document.getElementById('adminControl').classList.remove('hidden');
+                    document.getElementById('generateSeatsBtn').classList.remove('hidden');
+                }
+                
+                // MJ用户也可以生成座位
+                if (currentUser.username.toLowerCase() === 'mj') {
+                    document.getElementById('generateSeatsBtn').classList.remove('hidden');
+                }
+            } else {
+                alert(data.message);
+            }
+        }
+
+        // 注册
+        async function register() {
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const avatar = document.getElementById('regAvatar').value || 'default_avatar.png';
+            
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password, avatar })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                alert('注册成功，请登录');
+                toggleAuthModal('login');
+            } else {
+                alert(data.message);
+            }
+        }
+
+        // 加载头像选择器数据并渲染
+        async function loadAvatarPicker() {
+            try {
+                const resp = await fetch('/api/avatars');
+                const data = await resp.json();
+                const picker = document.getElementById('avatarPicker');
+                if (!picker) return;
+                picker.innerHTML = '';
+                const taken = new Set(data.taken || []);
+                (data.all || []).forEach(emoji => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'w-10 h-10 text-2xl flex items-center justify-center rounded';
+                    btn.textContent = emoji;
+                    if (taken.has(emoji)) {
+                        btn.classList.add('opacity-40', 'cursor-not-allowed');
+                        btn.disabled = true;
+                    }
+                    btn.addEventListener('click', () => {
+                        if (btn.disabled) return;
+                        document.getElementById('regAvatar').value = emoji;
+                        // Highligh selected
+                        picker.querySelectorAll('button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
+                        btn.classList.add('ring', 'ring-2', 'ring-blue-400');
+                    });
+                    picker.appendChild(btn);
+                });
+            } catch (e) {
+                console.error('加载头像列表失败', e);
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            if (websocket) {
+                websocket.close();
+            }
+            currentUser = null;
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('authModal').classList.remove('hidden');
+            toggleAuthModal('login');
+        }
+
+        // 初始化WebSocket
+        function initWebSocket() {
+            if (websocket) {
+                websocket.close();
+            }
+            
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            websocket = new WebSocket(`${wsProtocol}//${window.location.host}/ws/${currentUser.username}`);
+            
+            websocket.onopen = () => {
+                console.log('WebSocket连接成功');
+            };
+            
+            websocket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            websocket.onclose = () => {
+                console.log('WebSocket连接关闭');
+                // 自动重连
+                setTimeout(initWebSocket, 3000);
+            };
+            
+            websocket.onerror = (error) => {
+                console.error('WebSocket错误:', error);
+            };
+        }
+
+        // 处理WebSocket消息
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'user_status':
+                    // update online user list; fall back to reloading full list
+                    try { updateOnlineUsers(data.online_users); } catch (e) { loadOnlineUsers(); }
+                    addActivityLog(`${data.username} ${data.action === 'online' ? '上线' : '下线'}`);
+                    break;
+                case 'score_update':
+                    addActivityLog(`${data.username} 执行了${data.action}操作，金额: ${data.amount}`);
+                    loadLeaderboard();
+                    break;
+                case 'rebalance':
+                    addActivityLog(data.message);
+                    loadLeaderboard();
+                    break;
+                case 'seats_update':
+                    renderSeats(data.seats, data.mirror);
+                    break;
+                case 'coin_flip':
+                    showCoinFlipResult(data.result);
+                    break;
+                case 'user_message':
+                    addActivityLog(`${data.username}: ${data.message}`);
+                    break;
+            }
+        }
+
+        // Update online users from websocket payload (or fallback to reload)
+        function updateOnlineUsers(usernames) {
+            // if we have a list of usernames, reload the full user info
+            // because avatar data is provided by /api/users
+            loadOnlineUsers();
+        }
+
+        // 切换Tab
+        function switchTab(tabName) {
+            // 隐藏所有Tab
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+
+            // 更新tab按钮样式
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.textContent.trim().toLowerCase() === tabName.toLowerCase());
+            if (btn) btn.classList.add('active');
+
+            // 显示选中的Tab
+            const tab = document.getElementById(`${tabName}Tab`);
+            if (tab) tab.classList.remove('hidden');
+
+            // 加载Tab数据
+            if (tabName === 'status') loadOnlineUsers();
+            if (tabName === 'points') loadUsersForPoints();
+            if (tabName === 'leaderboard') loadLeaderboard();
+            if (tabName === 'trends') loadTrends();
+            if (tabName === 'seats') refreshSeats();
+        }
+
+        // 加载所有用户用于Points选择（仅用于选择目标，actor 始终为当前用户）
+        let selectedTargetUser = null;
+        function resetPointsInputs() {
+            document.getElementById('pointsAmount').value = '';
+            document.getElementById('setCurrentAmount').value = '';
+            document.getElementById('wlAmount').value = '';
+            selectedTargetUser = null;
+            document.querySelectorAll('#targetUserButtons button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
+        }
+
+        async function loadUsersForPoints() {
+            const response = await fetch('/api/users');
+            const data = await response.json();
+
+            const pointsContainer = document.getElementById('pointsUserButtons');
+            const targetContainer = document.getElementById('targetUserButtons');
+            pointsContainer.innerHTML = '';
+            targetContainer.innerHTML = '';
+
+            // actor is always current user
+            const actorDiv = document.createElement('div');
+            actorDiv.className = 'px-3 py-1 rounded bg-gray-800 text-white';
+            actorDiv.textContent = currentUser ? currentUser.username : '未登录';
+            pointsContainer.appendChild(actorDiv);
+
+            // populate targets for win/loss
+            data.users.forEach(user => {
+                if (currentUser && user.username === currentUser.username) return; // skip self for target list
+                const tbtn = document.createElement('button');
+                tbtn.type = 'button';
+                tbtn.className = 'px-2 py-1 rounded bg-gray-700 text-white';
+                tbtn.textContent = user.username;
+                tbtn.addEventListener('click', () => {
+                    selectedTargetUser = user.username;
+                    document.querySelectorAll('#targetUserButtons button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
+                    tbtn.classList.add('ring', 'ring-2', 'ring-blue-400');
+                });
+                targetContainer.appendChild(tbtn);
+            });
+
+            // reset inputs
+            resetPointsInputs();
+        }
+
+        // 更新在线用户列表
+        async function loadOnlineUsers() {
+            // 实际应用中应该从WebSocket获取，这里先从API获取所有用户
+            const response = await fetch('/api/users');
+            const data = await response.json();
+            
+            const onlineUsersContainer = document.getElementById('onlineUsers');
+            onlineUsersContainer.innerHTML = '';
+            
+            data.users.forEach(user => {
+                const userCard = document.createElement('div');
+                userCard.className = 'online-card app-card rounded-lg p-3 text-center';
+                const avatar = user.avatar || 'default_avatar.png';
+                // 如果 avatar 看起来像文件名则显示图片，否则显示 emoji
+                if (typeof avatar === 'string' && avatar.indexOf('.') > -1) {
+                    userCard.innerHTML = `
+                        <img src="/static/${avatar}" class="w-14 h-14 rounded-full mx-auto mb-2 object-cover" />
+                        <p class="text-sm">${user.username}</p>
+                    `;
+                } else {
+                    userCard.innerHTML = `
+                        <div class="w-14 h-14 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl">${avatar}</div>
+                        <p class="text-sm">${user.username}</p>
+                    `;
+                }
+                onlineUsersContainer.appendChild(userCard);
+            });
+        }
+
+        // 添加活动日志
+        function addActivityLog(message) {
+            const logContainer = document.getElementById('activityLog');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'mb-1 text-sm';
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            // 滚动到底部
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // 更新记分
+        async function updateScore() {
+            const username = document.getElementById('pointsUser').value;
+            const action = document.getElementById('pointsAction').value;
+            const amount = parseFloat(document.getElementById('pointsAmount').value);
+            const targetUser = document.getElementById('targetUser').value;
+            
+            if (!amount || isNaN(amount)) {
+                alert('请输入有效的金额');
+                return;
+            }
+            
+            const response = await fetch('/api/update_score', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username,
+                    action,
+                    amount,
+                    target_user: (action === 'win' || action === 'loss') ? targetUser : null
+                })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                addActivityLog(`成功更新${username}的记分: ${action} ${amount}`);
+                loadLeaderboard();
+            } else {
+                alert(data.message);
+            }
+        }
+
+        // Perform simple points actions (buy_in, cash_out, set_current) as current user
+        async function performPointsAction(action, isSetCurrent = false) {
+            if (!currentUser) { alert('请先登录'); return; }
+            const username = currentUser.username;
+            let amount = 0;
+            if (action === 'set_current' || isSetCurrent) {
+                amount = parseFloat(document.getElementById('setCurrentAmount').value);
+            } else {
+                amount = parseFloat(document.getElementById('pointsAmount').value);
+            }
+            if (isNaN(amount)) { alert('请输入有效金额'); return; }
+
+            const response = await fetch('/api/update_score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, action, amount })
+            });
+            const data = await response.json();
+            if (data.success) {
+                addActivityLog(`成功更新${username}的记分: ${action} ${amount}`);
+                // clear the input that was used
+                try {
+                    if (action === 'set_current' || isSetCurrent) document.getElementById('setCurrentAmount').value = '';
+                    else document.getElementById('pointsAmount').value = '';
+                } catch (e) {}
+                loadLeaderboard();
+            } else {
+                alert(data.message || '操作失败');
+            }
+        }
+
+        // Perform win/loss with selected target user
+        async function performWinLoss(kind) {
+            if (!currentUser) { alert('请先登录'); return; }
+            if (!selectedTargetUser) { alert('请选择目标用户'); return; }
+            const amount = parseFloat(document.getElementById('wlAmount').value);
+            if (isNaN(amount)) { alert('请输入有效金额'); return; }
+            const response = await fetch('/api/update_score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: currentUser.username, action: kind, amount, target_user: selectedTargetUser })
+            });
+            const data = await response.json();
+            if (data.success) {
+                addActivityLog(`成功记录${kind} ${amount} 对 ${selectedTargetUser}`);
+                // clear wl input
+                try { document.getElementById('wlAmount').value = ''; } catch (e) {}
+                loadLeaderboard();
+            } else {
+                alert(data.message || '操作失败');
+            }
+        }
+
+        // 加载排行榜（桌面表格 + 移动卡片）
+        async function loadLeaderboard() {
+            const response = await fetch('/api/scores');
+            const data = await response.json();
+
+            // 保存原始数据用于撤销平衡
+            if (originalScores.length === 0) {
+                originalScores = JSON.parse(JSON.stringify(data.scores));
+            }
+
+            // 更新总赢亏显示：正数表示需要让赢家少赢，负数表示可以让输家少输
+            const msg = data.total_win_loss < 0 ? `可以让输家少输 ${Math.abs(data.total_win_loss).toFixed(2)}` : `需要让赢家少赢 ${Math.abs(data.total_win_loss).toFixed(2)}`;
+            document.getElementById('totalWinLoss').textContent = `总赢亏: ${data.total_win_loss.toFixed(2)} (${msg})`;
+
+            // Desktop table
+            const leaderboardCards = document.getElementById('leaderboardCards');
+            if (leaderboardCards) {
+                leaderboardCards.innerHTML = '';
+                // compute totals and highlight top 3 with larger badges
+                let totals = { current: 0, brought: 0, win_loss: 0 };
+                data.scores.forEach((score, idx) => {
+                    totals.current += parseFloat(score.current || 0);
+                    totals.brought += parseFloat(score.brought || 0);
+                    totals.win_loss += parseFloat(score.win_loss || 0);
+                    const card = document.createElement('div');
+                    card.className = 'app-card p-3 rounded-lg flex items-center justify-between gap-3';
+                    const rank = idx + 1;
+                    const badgeColor = rank === 1 ? 'bg-yellow-400' : (rank === 2 ? 'bg-gray-300' : (rank === 3 ? 'bg-amber-200' : 'bg-[rgba(255,255,255,0.03)]'));
+                    const avatarHtml = `<div class="flex items-center gap-3"><div class="w-12 h-12 rounded-full bg-[rgba(255,255,255,0.04)] flex items-center justify-center text-xl">${score.player.charAt(0).toUpperCase()}</div><div><div class="font-semibold">${score.player}</div><div class="text-sm muted">Brought: ${score.brought.toFixed(2)}</div></div></div>`;
+                    card.innerHTML = `
+                        <div class="flex items-center gap-3"> 
+                            <div class="px-2 py-1 rounded ${badgeColor} text-sm font-bold">#${rank}</div>
+                            ${avatarHtml}
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 text-right min-w-[200px]">
+                            <div>
+                                <div class="text-sm muted">Current</div>
+                                <div class="font-bold">${score.current.toFixed(2)}</div>
+                            </div>
+                            <div>
+                                <div class="text-sm muted">Buy-in</div>
+                                <div class="font-bold">${score.brought.toFixed(2)}</div>
+                            </div>
+                            <div>
+                                <div class="text-sm muted">Winning</div>
+                                <div class="font-bold ${score.win_loss>=0 ? 'text-green-400' : 'text-red-400'}">${score.win_loss.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    `;
+                    leaderboardCards.appendChild(card);
+                });
+
+                // Append totals summary card
+                const totalCard = document.createElement('div');
+                totalCard.className = 'app-card p-3 rounded-lg flex items-center justify-between gap-3';
+                totalCard.innerHTML = `
+                    <div class="flex items-center gap-3"> 
+                        <div class="px-2 py-1 rounded bg-[rgba(255,255,255,0.03)] text-sm font-bold">Total</div>
+                        <div class="font-semibold">Overall</div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 text-right min-w-[200px]">
+                        <div>
+                            <div class="text-sm muted">Current</div>
+                            <div class="font-bold">${totals.current.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div class="text-sm muted">Buy-in</div>
+                            <div class="font-bold">${totals.brought.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div class="text-sm muted">Winning</div>
+                            <div class="font-bold ${totals.win_loss>=0 ? 'text-green-400' : 'text-red-400'}">${totals.win_loss.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+                leaderboardCards.appendChild(totalCard);
+            }
+
+            // Mobile list
+            const list = document.getElementById('leaderboardList');
+            if (list) {
+                list.innerHTML = '';
+                let totalsMobile = { current: 0, brought: 0, win_loss: 0 };
+                data.scores.forEach(score => {
+                    totalsMobile.current += parseFloat(score.current || 0);
+                    totalsMobile.brought += parseFloat(score.brought || 0);
+                    totalsMobile.win_loss += parseFloat(score.win_loss || 0);
+                    const card = document.createElement('div');
+                    card.className = 'app-card p-3 rounded-lg mb-3';
+                    const winLossClass = score.win_loss >= 0 ? 'text-green-400' : 'text-red-400';
+                    card.innerHTML = `
+                        <div class="leader-grid">
+                            <div class="leader-name">
+                                <div class="font-bold">${score.player}</div>
+                                <div class="font-bold text-right">${score.current.toFixed(2)}</div>
+                            </div>
+                            <div class="leader-values">
+                                <div class="font-bold text-right">${score.brought.toFixed(2)}</div>
+                                <div class="font-bold ${winLossClass} text-right">${score.win_loss.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(card);
+                });
+
+                // mobile totals card
+                const mobileTotal = document.createElement('div');
+                mobileTotal.className = 'app-card p-3 rounded-lg mb-3';
+                mobileTotal.innerHTML = `
+                    <div class="leader-grid">
+                        <div class="leader-name">
+                            <div class="font-bold">Total</div>
+                            <div class="font-bold text-right">${totalsMobile.current.toFixed(2)}</div>
+                        </div>
+                        <div class="leader-values">
+                            <div class="font-bold text-right">${totalsMobile.brought.toFixed(2)}</div>
+                            <div class="font-bold ${totalsMobile.win_loss>=0 ? 'text-green-400' : 'text-red-400'} text-right">${totalsMobile.win_loss.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(mobileTotal);
+            }
+        }
+
+        // 重新平衡记分
+        async function rebalanceScores() {
+            const count = prompt('请输入需要调整的玩家数量:', '1');
+            if (!count || isNaN(count) || count < 1) {
+                alert('请输入有效的数量');
+                return;
+            }
+            // snapshot current scores so we can undo this specific rebalance
+            try {
+                const snapResp = await fetch('/api/scores');
+                const snapData = await snapResp.json();
+                if (snapData && snapData.scores) {
+                    rebalanceStack.push(JSON.parse(JSON.stringify(snapData.scores)));
+                }
+            } catch (e) {
+                console.error('failed to snapshot scores before rebalance', e);
+            }
+
+            const response = await fetch('/api/rebalance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ count: parseInt(count) })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                alert(data.message);
+                loadLeaderboard();
+            } else {
+                alert(data.message);
+            }
+        }
+
+        // 撤销平衡
+        function revertRebalance() {
+            if (!rebalanceStack || rebalanceStack.length === 0) {
+                alert('没有可撤销的平衡操作');
+                return;
+            }
+            if (confirm('确定要撤销最近一次平衡操作吗？')) {
+                const lastSnapshot = rebalanceStack.pop();
+                // restore 'current' values from the snapshot
+                lastSnapshot.forEach(score => {
+                    try {
+                        updateScoreManually(score.player, 'set_current', score.current);
+                    } catch (e) {
+                        console.error('restore score failed', e);
+                    }
+                });
+                loadLeaderboard();
+                addActivityLog('已撤销最近一次平衡操作');
+            }
+        }
+
+        // 手动更新记分（用于撤销平衡）
+        async function updateScoreManually(username, action, amount) {
+            await fetch('/api/update_score', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username,
+                    action,
+                    amount
+                })
+            });
+        }
+
+        // 加载趋势图 — 每个玩家一条折线，x轴为时间，y轴为金额（current）
+        async function loadTrends() {
+            const resp = await fetch('/api/trends');
+            const data = await resp.json();
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+
+            if (trendsChart) trendsChart.destroy();
+
+            const trends = data.trends || {};
+
+            // 收集所有时间戳并排序
+            const allTimestamps = new Set();
+            Object.values(trends).forEach(arr => arr.forEach(r => allTimestamps.add(r.timestamp)));
+            const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => new Date(a) - new Date(b));
+            const labels = sortedTimestamps.map(ts => new Date(ts).toLocaleString());
+
+            // 生成每个用户的数据集
+            const userNames = Object.keys(trends);
+            const datasets = userNames.map((uname, i) => {
+                const map = {};
+                // use win_loss for trends
+                trends[uname].forEach(r => { map[r.timestamp] = r.win_loss; });
+                // forward-fill missing values (视为水平无变化)
+                const dataPoints = [];
+                let prev = null;
+                for (const ts of sortedTimestamps) {
+                    if (map[ts] !== undefined) {
+                        prev = map[ts];
+                        dataPoints.push(map[ts]);
+                    } else {
+                        dataPoints.push(prev !== null ? prev : 0);
+                    }
+                }
+                const hue = Math.round((i * 360) / Math.max(1, userNames.length));
+                const color = `hsl(${hue} 80% 60%)`;
+                const bg = `hsla(${hue}, 90%, 50%, 0.12)`;
+                return {
+                    label: uname,
+                    data: dataPoints,
+                    borderColor: color,
+                    backgroundColor: bg,
+                    tension: 0.3,
+                    spanGaps: true,
+                    pointRadius: 4,
+                    pointBackgroundColor: dataPoints.map(v => v == null ? 'transparent' : color),
+                    borderWidth: 2
+                };
+            });
+
+            trendsChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: true, labels: { color: '#cbd5e1' } } },
+                    scales: {
+                        x: { ticks: { color: '#cbd5e1' } },
+                        y: { ticks: { color: '#cbd5e1' }, beginAtZero: true }
+                    },
+                    interaction: { mode: 'index', intersect: false }
+                }
+            });
+        }
+
+        // 生成座位
+        async function generateSeats() {
+            const response = await fetch('/api/generate_seats', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            const data = await response.json();
+            renderSeats(data.seats, data.mirror);
+            addActivityLog('已生成新的座位分配 (redraw)');
+        }
+
+        // 刷新座位 — 不改变顺序，只读取最新结果
+        async function refreshSeats() {
+            try {
+                const resp = await fetch('/api/seats');
+                const data = await resp.json();
+                if (data.seats && data.seats.length) {
+                    renderSeats(data.seats, data.mirror);
+                    addActivityLog('已刷新座位（不改变顺序）');
+                } else {
+                    addActivityLog('尚无座位分配，使用 redraw 生成');
+                }
+            } catch (e) {
+                console.error('刷新座位失败', e);
+            }
+        }
+
+        // 渲染座位 — 均匀分布在椭圆周上，显示头像与用户名
+        async function renderSeats(seats, mirrorFlag) {
+            const container = document.getElementById('seatsContainer');
+            container.innerHTML = '';
+
+            // 获取用户头像映射
+            const usersResp = await fetch('/api/users');
+            const usersData = await usersResp.json();
+            const avatarMap = {};
+            usersData.users.forEach(u => avatarMap[u.username] = u.avatar || 'default_avatar.png');
+
+                const rect = container.getBoundingClientRect();
+                const cx = rect.width / 2;
+                const cy = rect.height / 2;
+                const rx = rect.width * 0.42; // ellipse radii
+                const ry = rect.height * 0.42;
+
+            // place seats evenly around the ellipse and push them outside the table edge
+            const outwardBase = Math.max(rx, ry) * 0.28; // proportionally push seats outward
+            const mirror = !!mirrorFlag;
+            const tableEl = document.getElementById('tableEllipse');
+            if (tableEl) {
+                tableEl.style.transform = mirror ? 'rotate(180deg)' : 'none';
+            }
+
+            seats.forEach((seat, i) => {
+                const angle = (seat.angle !== undefined && seat.angle !== null) ? seat.angle : ((2 * Math.PI * i) / seats.length - Math.PI / 2); // prefer server-provided angle
+                // point on ellipse edge
+                const ex = cx + rx * Math.cos(angle);
+                const ey = cy + ry * Math.sin(angle);
+                // push outward along radial direction so people sit outside the table
+                const outward = outwardBase;
+                const ox = Math.cos(angle) * outward;
+                const oy = Math.sin(angle) * outward;
+                const x = ex + ox;
+                const y = ey + oy;
+
+                const seatElement = document.createElement('div');
+                // minimal container — no circular card background so table image stays visible
+                // responsive sizes: smaller on narrow screens
+                seatElement.className = 'absolute w-16 h-16 sm:w-20 sm:h-20 flex flex-col justify-center items-center text-xs text-center p-0';
+                seatElement.style.left = `${x}px`;
+                seatElement.style.top = `${y}px`;
+                // if the table is rotated, counter-rotate each seat so avatar/name remain upright
+                seatElement.style.transform = mirror ? 'translate(-50%, -50%) rotate(180deg)' : 'translate(-50%, -50%)';
+
+                // seat number badge
+                const badge = document.createElement('div');
+                badge.className = 'absolute -top-2 -right-2 text-[10px] px-1 py-0.5 rounded bg-[rgba(0,0,0,0.5)] text-white';
+                badge.textContent = `#${seat.seat}`;
+                seatElement.appendChild(badge);
+
+                const avatarVal = seat.username ? (avatarMap[seat.username] || 'default_avatar.png') : null;
+                if (avatarVal && typeof avatarVal === 'string' && avatarVal.indexOf('.') > -1) {
+                    const img = document.createElement('img');
+                    img.src = `/static/${avatarVal}`;
+                    img.className = 'w-10 h-10 rounded-full mb-1 object-cover';
+                    seatElement.appendChild(img);
+                    const name = document.createElement('div');
+                    name.className = 'truncate w-20 text-xs';
+                    name.textContent = seat.username;
+                    seatElement.appendChild(name);
+                } else if (avatarVal) {
+                    const emojiSpan = document.createElement('div');
+                    emojiSpan.className = 'mb-1 text-xl';
+                    emojiSpan.textContent = avatarVal;
+                    seatElement.appendChild(emojiSpan);
+                    const name = document.createElement('div');
+                    name.className = 'truncate w-20 text-xs';
+                    name.textContent = seat.username;
+                    seatElement.appendChild(name);
+                } else {
+                    // empty seat — show small seat number label only (no circular placeholder)
+                    const emptyLabel = document.createElement('div');
+                    emptyLabel.className = 'text-xs muted';
+                    emptyLabel.textContent = `Seat ${seat.seat}`;
+                    seatElement.appendChild(emptyLabel);
+                }
+                container.appendChild(seatElement);
+            });
+
+            // Redraw button visibility for peng/mj
+            const redraw = document.getElementById('redrawSeatsBtn');
+            if (currentUser && (currentUser.username.toLowerCase() === 'peng' || currentUser.username.toLowerCase() === 'mj')) {
+                redraw.classList.remove('hidden');
+            } else {
+                redraw.classList.add('hidden');
+            }
+        }
+
+        // 硬币翻转（有动画）
+        async function coinFlip() {
+            const percentage = parseFloat(document.getElementById('yesPercentage').value);
+
+            if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+                alert('请输入0-100之间的有效百分比');
+                return;
+            }
+
+            const btn = document.getElementById('coinFlipBtn');
+            if (btn) { btn.disabled = true; btn.classList.add('opacity-60', 'cursor-not-allowed'); }
+
+            const resultContainer = document.getElementById('coinFlipResult');
+            resultContainer.innerHTML = '';
+
+            // 创建硬币DOM：两面
+            const coin = document.createElement('div');
+            coin.className = 'coin';
+            const inner = document.createElement('div');
+            inner.className = 'coin-inner';
+            const front = document.createElement('div');
+            front.className = 'coin-face coin-front';
+            front.textContent = 'CALL';
+            const back = document.createElement('div');
+            back.className = 'coin-face coin-back';
+            back.textContent = 'FOLD';
+            inner.appendChild(front);
+            inner.appendChild(back);
+            coin.appendChild(inner);
+            resultContainer.appendChild(coin);
+
+            // start server request but don't await yet
+            const respPromise = fetch('/api/coin_flip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `percentage=${percentage}`
+            }).then(r => r.json()).catch(e => ({ success: false, result: 'no' }));
+
+            // animate 1 flip
+            const sleep = ms => new Promise(res => setTimeout(res, ms));
+            for (let k = 0; k < 1; k++) {
+                inner.style.transition = 'transform 450ms ease-in-out';
+                // rotate 720deg per iteration to get a clear flipping motion
+                inner.style.transform = `rotateY(${720 * (k + 1)}deg)`;
+                await sleep(500);
+            }
+
+            // await server result
+            const data = await respPromise;
+            const result = data && data.result ? data.result : 'no';
+
+            // finalize coin to show final face
+            inner.style.transition = 'transform 300ms ease-in-out';
+            inner.style.transform = result === 'yes' ? 'rotateY(0deg)' : 'rotateY(180deg)';
+
+            // re-enable button
+            if (btn) { btn.disabled = false; btn.classList.remove('opacity-60', 'cursor-not-allowed'); }
+
+            // log result (map to human-friendly labels)
+            const display = result === 'yes' ? 'Call' : 'Fold';
+            addActivityLog(`随机结果: ${display} (概率: ${document.getElementById('yesPercentage').value}%)`);
+        }
+
+        // 显示硬币翻转结果（让硬币停在相应一面，保留动画）
+        function showCoinFlipResult(result) {
+            const resultContainer = document.getElementById('coinFlipResult');
+            // If an animated coin already exists (created by coinFlip), finalize it
+            const existingCoin = resultContainer.querySelector('.coin');
+            if (existingCoin) {
+                const inner = existingCoin.querySelector('.coin-inner');
+                if (inner) {
+                    // stop the flip animation and set final face
+                    existingCoin.classList.remove('flipY');
+                    inner.style.transition = 'transform 300ms';
+                    if (result === 'yes') {
+                        inner.style.transform = 'rotateY(0deg)';
+                    } else {
+                        inner.style.transform = 'rotateY(180deg)';
+                    }
+                }
+            } else {
+                // no existing coin (e.g., if called directly) — render a static coin
+                resultContainer.innerHTML = '';
+                const coin = document.createElement('div');
+                coin.className = 'coin';
+                const inner = document.createElement('div');
+                inner.className = 'coin-inner';
+                const front = document.createElement('div');
+                front.className = 'coin-face coin-front';
+                front.textContent = 'CALL';
+                const back = document.createElement('div');
+                back.className = 'coin-face coin-back';
+                back.textContent = 'FOLD';
+                inner.appendChild(front);
+                inner.appendChild(back);
+                inner.style.transform = result === 'yes' ? 'rotateY(0deg)' : 'rotateY(180deg)';
+                coin.appendChild(inner);
+                resultContainer.appendChild(coin);
+            }
+
+            // log the result in activity log (no textual display in UI)
+            const display = result === 'yes' ? 'Call' : 'Fold';
+            addActivityLog(`随机结果: ${display} (概率: ${document.getElementById('yesPercentage').value}%)`);
+        }
+
+        // 新建游戏会话
+        async function createNewSession() {
+            if (!currentUser || !(currentUser.is_admin || currentUser.username.toLowerCase() === 'peng')) {
+                alert('只有管理员可以创建新会话');
+                return;
+            }
+            if (!confirm('确定要创建新的游戏会话吗？所有当前数据将被保存并重置。')) return;
+            addActivityLog('创建了新的游戏会话 (请求已发送)');
+            try {
+                const resp = await fetch('/api/new_session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ admin_user: currentUser.username }) });
+                const data = await resp.json();
+                if (data.success) {
+                    addActivityLog('新会话已创建');
+                    loadAllData();
+                } else {
+                    alert(data.message || '创建失败');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('无法创建新会话');
+            }
+        }
+
+        // 清空所有数据（包括用户和历史记录）
+        async function resetAllData() {
+            if (!currentUser || !(currentUser.is_admin || currentUser.username.toLowerCase() === 'peng')) {
+                alert('只有管理员可以清空数据');
+                return;
+            }
+            if (!confirm('⚠️ 此操作将删除所有用户账号和游戏数据，无法撤销。确定继续吗？')) return;
+            if (!confirm('再次确认：删除所有数据？此操作不可恢复！')) return;
+            
+            try {
+                const resp = await fetch('/api/reset_all', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ admin_user: currentUser.username }) 
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    alert('所有数据已清空，请重新登录');
+                    // Clear local session and redirect to login
+                    currentUser = null;
+                    document.getElementById('mainApp').classList.add('hidden');
+                    document.getElementById('authModal').classList.remove('hidden');
+                    document.getElementById('loginUsername').value = '';
+                    document.getElementById('loginPassword').value = '';
+                    document.getElementById('regUsername').value = '';
+                    document.getElementById('regPassword').value = '';
+                } else {
+                    alert(data.message || '清空失败');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('清空数据失败');
+            }
+        }
+
+        // 刷新所有数据
+        function refreshAllData() {
+            loadOnlineUsers();
+            loadUsersForPoints();
+            loadLeaderboard();
+            loadTrends();
+            refreshSeats();
+            addActivityLog('已刷新所有数据');
+        }
+
+        // 加载所有数据
+        function loadAllData() {
+            loadOnlineUsers();
+            loadUsersForPoints();
+            loadLeaderboard();
+            loadTrends();
+            refreshSeats();
+        }
+
+        // Avatar change modal
+        function openAvatarModal() {
+            const modal = document.getElementById('avatarModal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            loadAvatarPickerModal();
+        }
+
+        function closeAvatarModal() {
+            const modal = document.getElementById('avatarModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+        }
+
+        async function loadAvatarPickerModal() {
+            try {
+                const resp = await fetch('/api/avatars');
+                const data = await resp.json();
+                const picker = document.getElementById('avatarPickerModal');
+                picker.innerHTML = '';
+                const taken = new Set(data.taken || []);
+                (data.all || []).forEach(emoji => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'w-10 h-10 text-2xl flex items-center justify-center rounded';
+                    btn.textContent = emoji;
+                    // allow current user's avatar
+                    if (taken.has(emoji) && !(currentUser && currentUser.avatar === emoji)) {
+                        btn.classList.add('opacity-40', 'cursor-not-allowed');
+                        btn.disabled = true;
+                    }
+                    btn.addEventListener('click', () => {
+                        document.getElementById('avatarPickerModalSelected').value = emoji;
+                        picker.querySelectorAll('button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
+                        btn.classList.add('ring', 'ring-2', 'ring-blue-400');
+                    });
+                    picker.appendChild(btn);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveAvatarChange() {
+            const avatar = document.getElementById('avatarPickerModalSelected').value;
+            if (!avatar) { alert('请选择头像'); return; }
+            const resp = await fetch('/api/update_avatar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser.username, avatar }) });
+            const data = await resp.json();
+            if (data.success) {
+                currentUser.avatar = avatar;
+                const av = document.getElementById('currentAvatar');
+                if (avatar.indexOf('.') > -1) av.innerHTML = `<img src="/static/${avatar}" class="w-8 h-8 rounded-full object-cover"/>`; else av.textContent = avatar;
+                closeAvatarModal();
+                loadOnlineUsers();
+            } else {
+                alert(data.message);
+            }
+        }
+
+        // Admin: open Manage Users modal
+        function openManageUsers() {
+            console.log('openManageUsers called', currentUser);
+            if (!currentUser || !(currentUser.is_admin || currentUser.username.toLowerCase() === 'peng')) {
+                alert('只有管理员可以管理用户');
+                return;
+            }
+            const modal = document.getElementById('manageUsersModal');
+            if (!modal) { console.warn('manageUsersModal not found'); return; }
+            // remove hidden class and force visible styles
+            modal.classList.remove('hidden');
+            // ensure modal is a direct child of body to avoid stacking-context issues
+            try { if (modal.parentElement !== document.body) document.body.appendChild(modal); } catch (e) { console.warn('append modal to body failed', e); }
+            try {
+                modal.style.display = 'flex';
+                modal.style.zIndex = '9999';
+                modal.style.opacity = '1';
+                modal.style.visibility = 'visible';
+                modal.style.pointerEvents = 'auto';
+            } catch (e) { console.warn('could not set modal styles', e); }
+            console.log('manage modal shown:', modal);
+            loadManageUsers();
+        }
+
+        function closeManageUsers() {
+            const modal = document.getElementById('manageUsersModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            try { modal.style.display = 'none'; modal.style.pointerEvents = 'none'; modal.style.visibility = 'hidden'; } catch (e) {}
+        }
+
+        async function loadManageUsers() {
+            try {
+                const resp = await fetch('/api/users_all');
+                const data = await resp.json();
+                console.log('manage users payload', data);
+                const list = document.getElementById('manageUsersList');
+                if (!list) return;
+                list.innerHTML = '';
+                const users = data.users || [];
+                if (users.length === 0) {
+                    const none = document.createElement('div');
+                    none.className = 'p-3 text-sm muted';
+                    none.textContent = '无用户';
+                    list.appendChild(none);
+                    return;
+                }
+                users.forEach(u => {
+                    const row = document.createElement('div');
+                    row.className = 'flex items-center justify-between p-2 border-b';
+                    const left = document.createElement('div');
+                    left.className = 'flex items-center gap-3';
+                    const avatar = document.createElement('div');
+                    avatar.className = 'w-8 h-8 rounded-full flex items-center justify-center';
+                    avatar.textContent = u.avatar || '';
+                    const name = document.createElement('div');
+                    name.textContent = u.username;
+                    left.appendChild(avatar);
+                    left.appendChild(name);
+                    row.appendChild(left);
+
+                    const right = document.createElement('div');
+                    // prevent admin from deactivating themselves
+                    if (currentUser && currentUser.username === u.username) {
+                        const badge = document.createElement('div');
+                        badge.className = 'text-sm muted';
+                        badge.textContent = '当前管理员';
+                        right.appendChild(badge);
+                    } else {
+                        if (u.active) {
+                            const btn = document.createElement('button');
+                            btn.className = 'px-2 py-1 rounded bg-red-600 text-white text-sm';
+                            btn.textContent = '停用';
+                            btn.addEventListener('click', () => deactivateUser(u.username));
+                            right.appendChild(btn);
+                        } else {
+                            const btn = document.createElement('button');
+                            btn.className = 'px-2 py-1 rounded bg-green-600 text-white text-sm';
+                            btn.textContent = '恢复';
+                            btn.addEventListener('click', () => reactivateUser(u.username));
+                            right.appendChild(btn);
+                        }
+                    }
+                    row.appendChild(right);
+                    list.appendChild(row);
+                });
+            } catch (e) {
+                console.error('加载管理用户失败', e);
+            }
+        }
+
+        async function reactivateUser(username) {
+            if (!confirm(`确认恢复用户 ${username} 吗？`)) return;
+            try {
+                const resp = await fetch('/api/reactivate_user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ admin_user: currentUser.username, username }) });
+                const data = await resp.json();
+                if (data.success) {
+                    addActivityLog(`管理员 ${currentUser.username} 恢复用户 ${username}`);
+                    loadManageUsers();
+                    loadOnlineUsers();
+                    loadUsersForPoints();
+                    loadLeaderboard();
+                    refreshSeats();
+                } else {
+                    alert(data.message || '恢复失败');
+                }
+            } catch (e) {
+                console.error('恢复用户失败', e);
+                alert('恢复失败');
+            }
+        }
+
+        async function deactivateUser(username) {
+            if (!confirm(`确认停用用户 ${username} 吗？该用户将从排行榜和座位分配中移除。`)) return;
+            try {
+                const resp = await fetch('/api/delete_user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ admin_user: currentUser.username, username }) });
+                const data = await resp.json();
+                if (data.success) {
+                    addActivityLog(`管理员 ${currentUser.username} 停用用户 ${username}`);
+                    // refresh related UI
+                    loadManageUsers();
+                    loadOnlineUsers();
+                    loadUsersForPoints();
+                    loadLeaderboard();
+                    refreshSeats();
+                } else {
+                    alert(data.message || '停用失败');
+                }
+            } catch (e) {
+                console.error('停用用户失败', e);
+                alert('停用失败');
+            }
+        }
+    </script>
+
+    <!-- Avatar modal -->
+    <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="app-card rounded-lg p-6 w-96">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">更改头像</h2>
+                <button onclick="closeAvatarModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+            <div id="avatarPickerModal" class="flex flex-wrap gap-2 p-2 border rounded bg-gray-100 max-h-40 overflow-y-auto"></div>
+            <input type="hidden" id="avatarPickerModalSelected" />
+            <div class="mt-4 flex justify-end gap-2">
+                <button onclick="closeAvatarModal()" class="px-4 py-2 rounded bg-gray-300">取消</button>
+                <button onclick="saveAvatarChange()" class="px-4 py-2 rounded bg-blue-600 text-white">保存</button>
+            </div>
+    </div>
+
+    <!-- Manage Users modal (admin) -->
+    <div id="manageUsersModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="app-card rounded-lg p-6 w-96">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">管理用户</h2>
+                <button onclick="closeManageUsers()" class="text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+            <div id="manageUsersList" class="max-h-60 overflow-y-auto"></div>
+            <div class="mt-4 flex justify-end gap-2">
+                <button onclick="closeManageUsers()" class="px-4 py-2 rounded bg-gray-300">关闭</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

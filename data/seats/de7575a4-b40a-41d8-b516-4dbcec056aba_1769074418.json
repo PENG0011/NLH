@@ -1,0 +1,22 @@
+{
+  "session_id": "de7575a4-b40a-41d8-b516-4dbcec056aba",
+  "seats": [
+    {
+      "seat": 1,
+      "username": "mj",
+      "angle": -1.5707963267948966
+    },
+    {
+      "seat": 2,
+      "username": "xiang",
+      "angle": 0.5235987755982987
+    },
+    {
+      "seat": 3,
+      "username": "peng",
+      "angle": 2.617993877991494
+    }
+  ],
+  "mirror": true,
+  "generated_at": "2026-01-22T09:33:38.869692Z"
+}
