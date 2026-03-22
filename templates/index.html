@@ -87,11 +87,11 @@
                 <div id="loginForm">
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">用户名</label>
-                        <input type="text" id="loginUsername" class="w-full px-3 py-2 border rounded">
+                        <input type="text" id="loginUsername" class="w-full px-3 py-2 border rounded text-black">
                     </div>
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">密码</label>
-                        <input type="password" id="loginPassword" class="w-full px-3 py-2 border rounded">
+                        <input type="password" id="loginPassword" class="w-full px-3 py-2 border rounded text-black">
                     </div>
                     <button onclick="login()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">登录</button>
                     <p class="mt-2 text-sm">没有账号？<a onclick="toggleAuthModal('register')" class="text-blue-500">注册</a></p>
@@ -101,11 +101,11 @@
                 <div id="registerForm" class="hidden">
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">用户名</label>
-                        <input type="text" id="regUsername" class="w-full px-3 py-2 border rounded">
+                        <input type="text" id="regUsername" class="w-full px-3 py-2 border rounded text-black">
                     </div>
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">密码</label>
-                        <input type="password" id="regPassword" class="w-full px-3 py-2 border rounded">
+                        <input type="password" id="regPassword" class="w-full px-3 py-2 border rounded text-black">
                     </div>
                     <div class="mb-4">
                             <label class="block text-gray-700 mb-2">头像（请选择一个表情，唯一）</label>
@@ -160,6 +160,7 @@
                 <button onclick="switchTab('trends')" class="tab-btn">Trends</button>
                 <button onclick="switchTab('seats')" class="tab-btn">Seats</button>
                 <button onclick="switchTab('random')" class="tab-btn">Random</button>
+                <button id="adminTabBtn" onclick="switchTab('admin')" class="tab-btn hidden">Admin</button>
             </div>
         </nav>
 
@@ -184,7 +185,7 @@
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">Buy In / Cash Out</label>
                         <div class="flex gap-2">
-                            <input type="number" id="pointsAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40">
+                            <input type="number" id="pointsAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40 text-black">
                             <button onclick="performPointsAction('buy_in')" class="bg-green-500 text-white px-4 py-2 rounded">Buy In</button>
                             <button onclick="performPointsAction('cash_out')" class="bg-red-500 text-white px-4 py-2 rounded">Cash Out</button>
                         </div>
@@ -193,7 +194,7 @@
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">Set Current</label>
                         <div class="flex gap-2">
-                            <input type="number" id="setCurrentAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40">
+                            <input type="number" id="setCurrentAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40 text-black">
                             <button onclick="performPointsAction('set_current', true)" class="bg-blue-500 text-white px-4 py-2 rounded">Set Current</button>
                         </div>
                     </div>
@@ -201,7 +202,7 @@
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">Win / Loss</label>
                         <div class="flex gap-2 mb-2">
-                            <input type="number" id="wlAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40">
+                            <input type="number" id="wlAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40 text-black">
                             <div id="targetUserButtons" class="flex flex-wrap gap-2"></div>
                         </div>
                         <div class="flex gap-2">
@@ -225,6 +226,7 @@
                 <h2 class="text-xl font-bold mb-4">排行榜</h2>
                 <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:gap-4">
                     <div class="flex gap-2">
+                        <button onclick="loadLeaderboard()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2">🔄 Refresh</button>
                         <button onclick="rebalanceScores()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mr-2">重新平衡</button>
                         <button onclick="revertRebalance()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">撤销平衡</button>
                     </div>
@@ -280,12 +282,20 @@
                 <h2 class="text-xl font-bold mb-4">随机结果生成</h2>
                 <div class="mb-4">
                     <label class="block text-gray-700 mb-2">Call的百分比 (%)</label>
-                    <input type="number" id="yesPercentage" min="0" max="100" value="50" class="w-full px-3 py-2 border rounded mb-2">
+                    <input type="number" id="yesPercentage" min="0" max="100" value="50" class="w-full px-3 py-2 border rounded mb-2 text-black">
                     <button id="coinFlipBtn" onclick="coinFlip()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">开始随机</button>
                 </div>
                 <div id="coinFlipResult" class="mt-4 text-center text-2xl font-bold min-h-[100px] flex justify-center items-center">
                     <!-- 硬币动画将在这里显示 -->
                     <div id="coin" class="coin hidden"></div>
+                </div>
+            </div>
+
+            <!-- Admin Tab -->
+            <div id="adminTab" class="tab-content hidden">
+                <h2 class="text-xl font-bold mb-4">管理员面板</h2>
+                <div id="adminUserList" class="space-y-4">
+                    <!-- User management will be populated here -->
                 </div>
             </div>
         </div>
@@ -302,6 +312,48 @@
 
         // 页面加载
         document.addEventListener('DOMContentLoaded', () => {
+            // Check for stored user session
+            const storedUser = localStorage.getItem('currentUser');
+            if (storedUser) {
+                try {
+                    currentUser = JSON.parse(storedUser);
+                    // Restore the session
+                    document.getElementById('authModal').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    document.getElementById('currentUser').textContent = `当前用户: ${currentUser.username}`;
+                    // show avatar and change button
+                    const av = document.getElementById('currentAvatar');
+                    if (currentUser.avatar && currentUser.avatar.indexOf('.') > -1) {
+                        av.innerHTML = `<img src="/static/${currentUser.avatar}" class="w-8 h-8 rounded-full object-cover"/>`;
+                    } else {
+                        av.textContent = currentUser.avatar || '';
+                    }
+                    document.getElementById('changeAvatarBtn').classList.remove('hidden');
+                    
+                    // 初始化WebSocket
+                    initWebSocket();
+                    
+                    // 加载所有数据
+                    loadAllData();
+                    
+                    // 显示管理员控件
+                    if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
+                        document.getElementById('adminControl').classList.remove('hidden');
+                        document.getElementById('generateSeatsBtn').classList.remove('hidden');
+                        document.getElementById('adminTabBtn').classList.remove('hidden');
+                    }
+                    
+                    // MJ用户也可以生成座位
+                    if (currentUser.username.toLowerCase() === 'mj') {
+                        document.getElementById('generateSeatsBtn').classList.remove('hidden');
+                    }
+                    return; // Skip showing auth modal
+                } catch (e) {
+                    // Invalid stored data, clear it
+                    localStorage.removeItem('currentUser');
+                }
+            }
+            
             // 默认显示登录模态框
             toggleAuthModal('login');
             
@@ -336,10 +388,18 @@
                 loginForm.classList.remove('hidden');
                 registerForm.classList.add('hidden');
                 authTitle.textContent = '登录';
+                // Clear register form
+                document.getElementById('regUsername').value = '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regAvatar').value = 'default_avatar.png';
+                document.getElementById('avatarPicker').querySelectorAll('button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
             } else {
                 loginForm.classList.add('hidden');
                 registerForm.classList.remove('hidden');
                 authTitle.textContent = '注册';
+                // Clear login form
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
                 // 加载头像选择器（emoji 列表）
                 loadAvatarPicker();
             }
@@ -361,6 +421,8 @@
             const data = await response.json();
             if (data.success) {
                 currentUser = data.user;
+                // Store user session in localStorage
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 document.getElementById('authModal').classList.add('hidden');
                 document.getElementById('mainApp').classList.remove('hidden');
                     document.getElementById('currentUser').textContent = `当前用户: ${currentUser.username}`;
@@ -383,6 +445,7 @@
                 if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
                     document.getElementById('adminControl').classList.remove('hidden');
                     document.getElementById('generateSeatsBtn').classList.remove('hidden');
+                    document.getElementById('adminTabBtn').classList.remove('hidden');
                 }
                 
                 // MJ用户也可以生成座位
@@ -398,7 +461,17 @@
         async function register() {
             const username = document.getElementById('regUsername').value;
             const password = document.getElementById('regPassword').value;
-            const avatar = document.getElementById('regAvatar').value || 'default_avatar.png';
+            const avatar = document.getElementById('regAvatar').value;
+            
+            if (!username || !password) {
+                alert('请输入用户名和密码');
+                return;
+            }
+            
+            if (!avatar || avatar === 'default_avatar.png') {
+                alert('请选择一个头像');
+                return;
+            }
             
             const response = await fetch('/register', {
                 method: 'POST',
@@ -455,6 +528,8 @@
                 websocket.close();
             }
             currentUser = null;
+            // Clear stored session
+            localStorage.removeItem('currentUser');
             document.getElementById('mainApp').classList.add('hidden');
             document.getElementById('authModal').classList.remove('hidden');
             toggleAuthModal('login');
@@ -546,6 +621,7 @@
             if (tabName === 'leaderboard') loadLeaderboard();
             if (tabName === 'trends') loadTrends();
             if (tabName === 'seats') refreshSeats();
+            if (tabName === 'admin') loadAdminUserList();
         }
 
         // 加载所有用户用于Points选择（仅用于选择目标，actor 始终为当前用户）
@@ -912,6 +988,121 @@
                     amount
                 })
             });
+        }
+
+        // 加载管理员用户列表
+        async function loadAdminUserList() {
+            const response = await fetch('/api/users_all');
+            const data = await response.json();
+            
+            const adminUserList = document.getElementById('adminUserList');
+            adminUserList.innerHTML = '';
+            
+            data.users.forEach(user => {
+                const userCard = document.createElement('div');
+                userCard.className = 'app-card p-4 rounded-lg';
+                userCard.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.04)] flex items-center justify-center text-lg">${user.avatar || user.username.charAt(0).toUpperCase()}</div>
+                            <div>
+                                <div class="font-semibold">${user.username}</div>
+                                <div class="text-sm muted">${user.active ? 'Active' : 'Inactive'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-sm muted mb-1">Buy In / Cash Out</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="adminBuyIn_${user.username}" step="0.01" placeholder="Amount" class="flex-1 px-3 py-2 border rounded text-black">
+                                <button onclick="adminPerformAction('${user.username}', 'buy_in')" class="bg-green-500 text-white px-3 py-2 rounded text-sm">Buy In</button>
+                                <button onclick="adminPerformAction('${user.username}', 'cash_out')" class="bg-red-500 text-white px-3 py-2 rounded text-sm">Cash Out</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm muted mb-1">Set Current</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="adminSetCurrent_${user.username}" step="0.01" placeholder="Amount" class="flex-1 px-3 py-2 border rounded text-black">
+                                <button onclick="adminPerformAction('${user.username}', 'set_current')" class="bg-blue-500 text-white px-3 py-2 rounded text-sm">Set</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm muted mb-1">Actions</label>
+                            <div class="flex gap-2">
+                                ${user.active ? `<button onclick="toggleUserActive('${user.username}', false)" class="bg-yellow-500 text-white px-3 py-2 rounded text-sm">Deactivate</button>` : `<button onclick="toggleUserActive('${user.username}', true)" class="bg-green-500 text-white px-3 py-2 rounded text-sm">Activate</button>`}
+                                <button onclick="deleteUser('${user.username}')" class="bg-red-600 text-white px-3 py-2 rounded text-sm">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                adminUserList.appendChild(userCard);
+            });
+        }
+
+        // 管理员执行用户操作
+        async function adminPerformAction(username, action) {
+            let amount = 0;
+            if (action === 'set_current') {
+                amount = parseFloat(document.getElementById(`adminSetCurrent_${username}`).value);
+            } else {
+                amount = parseFloat(document.getElementById(`adminBuyIn_${username}`).value);
+            }
+            if (isNaN(amount)) { alert('请输入有效金额'); return; }
+
+            const response = await fetch('/api/update_score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, action, amount })
+            });
+            const data = await response.json();
+            if (data.success) {
+                addActivityLog(`管理员更新${username}的记分: ${action} ${amount}`);
+                // clear the input
+                if (action === 'set_current') {
+                    document.getElementById(`adminSetCurrent_${username}`).value = '';
+                } else {
+                    document.getElementById(`adminBuyIn_${username}`).value = '';
+                }
+                loadLeaderboard();
+                loadAdminUserList(); // refresh the list
+            } else {
+                alert(data.message || '操作失败');
+            }
+        }
+
+        // 切换用户激活状态
+        async function toggleUserActive(username, active) {
+            const response = await fetch('/api/reactivate_user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, active })
+            });
+            const data = await response.json();
+            if (data.success) {
+                addActivityLog(`${active ? '激活' : '停用'}用户: ${username}`);
+                loadAdminUserList();
+            } else {
+                alert(data.message || '操作失败');
+            }
+        }
+
+        // 删除用户
+        async function deleteUser(username) {
+            if (!confirm(`确定要删除用户 ${username} 吗？此操作不可撤销！`)) return;
+            
+            const response = await fetch('/api/delete_user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            const data = await response.json();
+            if (data.success) {
+                addActivityLog(`删除用户: ${username}`);
+                loadAdminUserList();
+            } else {
+                alert(data.message || '操作失败');
+            }
         }
 
         // 加载趋势图 — 每个玩家一条折线，x轴为时间，y轴为金额（current）
