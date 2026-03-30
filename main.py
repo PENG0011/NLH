@@ -241,7 +241,13 @@ def get_user_by_username(username: str) -> Optional[dict]:
     cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
     user = cursor.fetchone()
     conn.close()
-    return dict(user) if user else None
+    if user:
+        user_dict = dict(user)
+        # "peng" is always super admin
+        if username.lower() == 'peng':
+            user_dict['is_admin'] = True
+        return user_dict
+    return None
 
 def get_or_create_default_session() -> str:
     conn = get_db_connection()
@@ -417,16 +423,65 @@ async def api_users_all():
     """Return all users including inactive with their active flag."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT username, avatar, active FROM users")
+    cursor.execute("SELECT username, avatar, active, is_admin FROM users")
     users = []
     for row in cursor.fetchall():
         try:
             active_val = bool(row["active"])
         except Exception:
             active_val = True
-        users.append({"username": row["username"], "avatar": row["avatar"], "active": active_val})
+        try:
+            is_admin_val = bool(row["is_admin"])
+        except Exception:
+            is_admin_val = False
+        # "peng" is always admin
+        if row["username"].lower() == "peng":
+            is_admin_val = True
+        users.append({"username": row["username"], "avatar": row["avatar"], "active": active_val, "is_admin": is_admin_val})
     conn.close()
     return {"users": users}
+
+
+@app.post('/api/toggle_admin')
+async def api_toggle_admin(request: Request):
+    """Toggle admin status for a user. Only peng can do this."""
+    payload = await request.json()
+    admin_user = payload.get('admin_user', '')
+    target_user = payload.get('username', '')
+    
+    # Only "peng" can assign admin status
+    if admin_user.lower() != 'peng':
+        return JSONResponse({"success": False, "message": "只有 peng 可以进行此操作"})
+    
+    if not target_user:
+        return JSONResponse({"success": False, "message": "用户名必填"})
+    
+    # Can't remove peng's admin status
+    if target_user.lower() == 'peng':
+        return JSONResponse({"success": False, "message": "无法更改 peng 的管理员状态"})
+    
+    target = get_user_by_username(target_user)
+    if not target:
+        return JSONResponse({"success": False, "message": "用户不存在"})
+    
+    # Toggle admin status
+    conn = get_db_connection()
+    cur = conn.cursor()
+    current_admin = bool(target.get('is_admin', 0))
+    new_admin_status = 0 if current_admin else 1
+    cur.execute("UPDATE users SET is_admin = ? WHERE username = ?", (new_admin_status, target_user))
+    conn.commit()
+    conn.close()
+    
+    # Save users file
+    try:
+        save_users_file()
+    except Exception:
+        pass
+    
+    action = "升级为" if new_admin_status else "降级为"
+    await manager.broadcast({"type": "admin_status_changed", "username": target_user, "is_admin": bool(new_admin_status)})
+    return {"success": True, "message": f"已{action}管理员", "is_admin": bool(new_admin_status)}
 
 
 @app.post('/api/reactivate_user')

@@ -16,11 +16,11 @@
             --accent:#7c3aed;
             --glass: rgba(255,255,255,0.04);
         }
-        html,body{height:100%;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+        html,body{height:100%;font-size:13px;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
         body{background:linear-gradient(180deg,var(--bg),#020617);color:#e6eef8;margin:0}
         .app-card{background:linear-gradient(180deg,var(--card),#07111b);box-shadow:0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
         .muted{color:var(--muted)}
-        .tab-btn{padding:10px 14px;border-radius:10px;background:transparent;color:var(--muted);border:1px solid transparent;transition:all .18s}
+        .tab-btn{padding:8px 12px;font-size:12px;border-radius:10px;background:transparent;color:var(--muted);border:1px solid transparent;transition:all .18s}
         .tab-btn:hover{color:#fff;border-color:rgba(124,58,237,0.12);transform:translateY(-2px)}
         .tab-btn.active{background:linear-gradient(90deg, rgba(124,58,237,0.18), rgba(59,130,246,0.06));color:#fff;box-shadow:0 8px 30px rgba(124,58,237,0.08)}
         .coin{width:96px;height:96px;perspective:1000px}
@@ -31,44 +31,26 @@
         .coin.flipY .coin-inner{transform:rotateY(720deg)}
 
         /* responsive tweaks */
-        .container{max-width:1200px;padding:18px;margin:0 auto}
-        #onlineUsers{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px}
-        .online-card{min-width:78px;width:78px;flex:0 0 auto}
+        .container{max-width:1200px;padding:12px;margin:0 auto}
+        #onlineUsers{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+        .online-card{min-width:70px;width:70px;flex:0 0 auto}
+        h1,h2,h3,h4,h5,h6{line-height:1.2;margin:8px 0}
+        label{font-size:12px}
+        input,textarea,select{font-size:13px!important}
 
-        #leaderboardCards{display:block}
-        #leaderboardList{display:none}
-        #leaderboardListHeader{display:none}
-        @media (max-width: 760px){
-            #leaderboardCards{display:none}
-            #leaderboardList{display:block}
-            #leaderboardListHeader{display:block}
-        }
-
-        /* leaderboard grid: force four columns (Name, Current, Buy-in, Winning) */
-        .leader-grid{
-            display: grid;
-            grid-template-columns: 1fr 1fr; /* left: name/current, right: values block */
-            gap: 8px;
-            align-items: center;
-        }
-        .leader-grid .muted, .leader-grid .text-sm{font-size:0.75rem;color:var(--muted)}
-        .leader-grid .font-bold{font-size:1rem}
-        .leader-grid > div{min-width:0}
-        /* allow name to wrap fully; keep numeric values single-line */
-        .leader-name *{white-space:normal;overflow:visible;text-overflow:unset}
-        .leader-values *{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .leader-name{display:flex;align-items:center;justify-content:space-between;gap:8px}
-        .leader-values{display:grid;grid-auto-flow:column;grid-template-columns:repeat(2,minmax(72px,1fr));gap:8px;justify-items:stretch;align-items:center;width:100%}
-        .leader-values > div{display:flex;justify-content:flex-end}
-        @media (max-width: 420px){
-            .leader-grid{grid-template-columns:1fr;}
-            .leader-name{grid-column:1/-1;margin-bottom:6px}
-            .leader-values{grid-column:1/-1;grid-auto-flow:column;grid-template-columns:repeat(2,1fr);gap:8px}
-        }
-        /* very narrow phones: allow columns to shrink but keep labels visible */
-        @media (max-width: 360px){
-            .leader-grid{grid-template-columns: 1fr 1fr 1fr 1fr; gap:6px}
-            .leader-grid .font-bold{font-size:0.95rem}
+        .leaderboard-table-container{width:100%;overflow:hidden;margin-top:0.5rem;}
+        .leaderboard-table-container::-webkit-scrollbar{display:none}
+        .leaderboard-table-container{-ms-overflow-style:none;scrollbar-width:none}
+        #leaderboardTable{width:100%;border-collapse:collapse;table-layout:fixed}
+        #leaderboardTable th,#leaderboardTable td{padding:0.5rem 0.25rem;text-align:right;border-bottom:1px solid rgba(255,255,255,0.12);font-size:2.25rem;line-height:1.1}
+        #leaderboardTable th:first-child,#leaderboardTable td:first-child{text-align:left;}
+        #leaderboardTable th{font-weight:700;color:#9aa4b2;letter-spacing:.01em;text-transform:uppercase;word-break:break-word;font-size:2.25rem;line-height:1.1}
+        #leaderboardTable tbody tr:hover{background:rgba(255,255,255,0.04);}
+        #leaderboardTable tfoot td{font-weight:700;border-top:2px solid rgba(255,255,255,0.16);}
+        #leaderboardTable td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        #leaderboardTable td:first-child{white-space:normal}
+        @media (max-width: 720px){
+            #leaderboardTable th,#leaderboardTable td{padding:0.4rem 0.2rem;font-size:0.7rem}
         }
 
         .table-ellipse{background:linear-gradient(180deg,#062018,#08302a);border-radius:9999px}
@@ -122,32 +104,32 @@
     <!-- 主界面 -->
     <div id="mainApp" class="hidden container">
         <!-- Top bar -->
-        <header class="flex items-center justify-between py-4 mb-4">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-500 text-white text-xl font-bold shadow-lg">R</div>
+        <header class="flex items-center justify-between py-2 mb-3">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-500 text-white font-bold shadow-lg text-sm">R</div>
                 <div>
-                    <div class="text-lg font-semibold">Accounting</div>
-                    <div class="text-sm muted"></div>
+                    <div class="text-base font-semibold">Accounting</div>
+                    <div class="text-xs muted"></div>
                 </div>
             </div>
 
-            <div class="flex-1 mx-6 hidden md:block">
-                <div class="w-full bg-[rgba(255,255,255,0.03)] rounded-lg py-2 px-4 flex items-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/></svg>
-                    <input placeholder="Search players or sessions" class="w-full bg-transparent outline-none text-sm muted" />
+            <div class="flex-1 mx-4 hidden md:block">
+                <div class="w-full bg-[rgba(255,255,255,0.03)] rounded-lg py-1 px-3 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/></svg>
+                    <input placeholder="Search players or sessions" class="w-full bg-transparent outline-none text-xs muted">
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
-                <div id="currentUserContainer" class="flex items-center gap-3">
-                    <div id="currentAvatar" class="w-10 h-10 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.03)]"></div>
+            <div class="flex items-center gap-2">
+                <div id="currentUserContainer" class="flex items-center gap-2">
+                    <div id="currentAvatar" class="w-8 h-8 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.03)] text-xs"></div>
                     <div>
-                        <div id="currentUser" class="text-sm font-medium"></div>
+                        <div id="currentUser" class="text-xs font-medium"></div>
                         <div class="text-xs muted">online</div>
                     </div>
-                    <button id="changeAvatarBtn" onclick="openAvatarModal()" class="text-sm px-2 py-1 rounded hidden">Change</button>
+                    <button id="changeAvatarBtn" onclick="openAvatarModal()" class="text-xs px-2 py-1 rounded hidden">Change</button>
                 </div>
-                <button onclick="logout()" class="px-4 py-2 rounded bg-gradient-to-br from-red-500 to-pink-500 text-white shadow-sm">退出</button>
+                <button onclick="logout()" class="px-3 py-1 text-sm rounded bg-gradient-to-br from-red-500 to-pink-500 text-white shadow-sm">退出</button>
             </div>
         </header>
 
@@ -159,6 +141,7 @@
                 <button onclick="switchTab('leaderboard')" class="tab-btn">Leaderboard</button>
                 <button onclick="switchTab('trends')" class="tab-btn">Trends</button>
                 <button onclick="switchTab('seats')" class="tab-btn">Seats</button>
+                <button onclick="switchTab('tournament')" class="tab-btn">Tournament</button>
                 <button onclick="switchTab('random')" class="tab-btn">Random</button>
                 <button id="adminTabBtn" onclick="switchTab('admin')" class="tab-btn hidden">Admin</button>
             </div>
@@ -168,107 +151,111 @@
         <div class="app-card rounded-lg p-6 min-h-[500px]">
             <!-- Status Tab -->
             <div id="statusTab" class="tab-content">
-                <h2 class="text-xl font-bold mb-4">在线用户</h2>
-                <div id="onlineUsers" class="grid grid-cols-4 gap-4"></div>
-                <h3 class="text-lg font-bold mt-6 mb-2">用户行为日志</h3>
-                <div id="activityLog" class="border rounded p-2 h-60 overflow-y-auto"></div>
+                <h2 class="text-base font-bold mb-3">在线用户</h2>
+                <div id="onlineUsers" class="grid grid-cols-4 gap-3"></div>
+                <h3 class="text-sm font-bold mt-4 mb-2">用户行为日志</h3>
+                <div id="activityLog" class="border rounded p-2 h-48 overflow-y-auto text-xs"></div>
             </div>
 
             <!-- Points Tab -->
             <div id="pointsTab" class="tab-content hidden">
-                <h2 class="text-xl font-bold mb-4">记分管理</h2>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 mb-2">选择用户</label>
+                <h2 class="text-base font-bold mb-3">记分管理</h2>
+                    <div class="mb-3">
+                        <label class="block text-gray-700 mb-1 text-xs">选择用户</label>
                         <div id="pointsUserButtons" class="flex flex-wrap gap-2"></div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-gray-700 mb-2">Buy In / Cash Out</label>
+                    <div class="mb-3">
+                        <label class="block text-gray-700 mb-1 text-xs">Buy In / Cash Out</label>
                         <div class="flex gap-2">
-                            <input type="number" id="pointsAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40 text-black">
-                            <button onclick="performPointsAction('buy_in')" class="bg-green-500 text-white px-4 py-2 rounded">Buy In</button>
-                            <button onclick="performPointsAction('cash_out')" class="bg-red-500 text-white px-4 py-2 rounded">Cash Out</button>
+                            <input type="number" id="pointsAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-black text-sm">
+                            <button onclick="performPointsAction('buy_in')" class="bg-green-500 text-white px-3 py-1 text-sm rounded">Buy In</button>
+                            <button onclick="performPointsAction('cash_out')" class="bg-red-500 text-white px-3 py-1 text-sm rounded">Cash Out</button>
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-gray-700 mb-2">Set Current</label>
+                    <div class="mb-3">
+                        <label class="block text-gray-700 mb-1 text-xs">Set Current</label>
                         <div class="flex gap-2">
-                            <input type="number" id="setCurrentAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40 text-black">
-                            <button onclick="performPointsAction('set_current', true)" class="bg-blue-500 text-white px-4 py-2 rounded">Set Current</button>
+                            <input type="number" id="setCurrentAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-black text-sm">
+                            <button onclick="performPointsAction('set_current', true)" class="bg-blue-500 text-white px-3 py-1 text-sm rounded">Set Current</button>
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-gray-700 mb-2">Win / Loss</label>
+                    <div class="mb-3">
+                        <label class="block text-gray-700 mb-1 text-xs">Win / Loss</label>
                         <div class="flex gap-2 mb-2">
-                            <input type="number" id="wlAmount" step="0.01" placeholder="金额" class="px-3 py-2 border rounded w-40 text-black">
+                            <input type="number" id="wlAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-black text-sm">
                             <div id="targetUserButtons" class="flex flex-wrap gap-2"></div>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="performWinLoss('win')" class="bg-green-600 text-white px-4 py-2 rounded">Win</button>
-                            <button onclick="performWinLoss('loss')" class="bg-red-600 text-white px-4 py-2 rounded">Loss</button>
+                            <button onclick="performWinLoss('win')" class="bg-green-600 text-white px-3 py-1 text-sm rounded">Win</button>
+                            <button onclick="performWinLoss('loss')" class="bg-red-600 text-white px-3 py-1 text-sm rounded">Loss</button>
                         </div>
                     </div>
 
                 <!-- 管理员控制面板 -->
-                <div id="adminControl" class="mt-8 hidden">
-                    <h3 class="text-lg font-bold mb-2">管理员控制</h3>
-                    <button onclick="createNewSession()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mr-2">新建游戏会话</button>
-                    <button onclick="refreshAllData()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mr-2">刷新数据</button>
-                    <button id="manageUsersBtn" onclick="openManageUsers()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mr-2">管理用户</button>
-                    <button onclick="resetAllData()" class="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800">⚠️ 清空所有数据</button>
-                </div>
+                <div class="mb-3 hidden">
+                        <label class="block text-gray-700 mb-2">管理员控制</label>
+                        <button onclick="createNewSession()" class="bg-green-500 text-white px-3 py-1 text-sm rounded hover:bg-green-600 mr-2">新建游戏会话</button>
+                        <button onclick="refreshAllData()" class="bg-yellow-500 text-white px-3 py-1 text-sm rounded hover:bg-yellow-600 mr-2">刷新数据</button>
+                        <button id="manageUsersBtn" onclick="openManageUsers()" class="bg-red-500 text-white px-3 py-1 text-sm rounded hover:bg-red-600 mr-2">管理用户</button>
+                        <button onclick="resetAllData()" class="bg-red-700 text-white px-3 py-1 text-sm rounded hover:bg-red-800">⚠️ 清空所有数据</button>
+                    </div>
             </div>
 
             <!-- Leaderboard Tab -->
             <div id="leaderboardTab" class="tab-content hidden">
-                <h2 class="text-xl font-bold mb-4">排行榜</h2>
-                <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                <h2 class="text-base font-bold mb-3">排行榜</h2>
+                <div class="mb-3 flex flex-col sm:flex-row sm:items-center sm:gap-3">
                     <div class="flex gap-2">
-                        <button onclick="loadLeaderboard()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2">🔄 Refresh</button>
-                        <button onclick="rebalanceScores()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mr-2">重新平衡</button>
-                        <button onclick="revertRebalance()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">撤销平衡</button>
+                        <button onclick="loadLeaderboard()" class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600">🔄 Refresh</button>
+                        <button onclick="rebalanceScores()" class="bg-green-500 text-white px-3 py-1 text-sm rounded hover:bg-green-600">重新平衡</button>
+                        <button onclick="revertRebalance()" class="bg-red-500 text-white px-3 py-1 text-sm rounded hover:bg-red-600">撤销平衡</button>
                     </div>
-                    <span id="totalWinLoss" class="mt-2 sm:mt-0 font-bold"></span>
+                    <span id="totalWinLoss" class="mt-2 sm:mt-0 font-bold text-sm"></span>
                 </div>
 
-                <!-- Desktop leaderboard: modern card list -->
-                <div id="leaderboardCards" class="grid gap-3"></div>
-                <!-- Mobile header (labels) -->
-                <div id="leaderboardListHeader" class="leaderboard-list-header hidden mt-2 app-card p-3 rounded-lg mb-3">
-                    <div class="leader-grid muted font-semibold">
-                        <div class="leader-name">
-                            <div>Name</div>
-                            <div class="text-right">Current</div>
-                        </div>
-                        <div class="leader-values">
-                            <div class="text-right">Buy-in</div>
-                            <div class="text-right">Winning</div>
-                        </div>
-                    </div>
+                <div class="leaderboard-table-container">
+                    <table id="leaderboardTable" class="app-card rounded-lg bg-[rgba(15,23,36,0.95)]">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Buy-in</th>
+                                <th>Total</th>
+                                <th>Win/Loss</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot>
+                            <tr>
+                                <td>Total</td>
+                                <td id="totalBuyin">-</td>
+                                <td id="totalCurrent">-</td>
+                                <td id="totalWinLossValue">-</td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
-                <!-- Mobile cards -->
-                <div id="leaderboardList" class="leaderboard-list mt-3"></div>
             </div>
 
             <!-- Trends Tab -->
             <div id="trendsTab" class="tab-content hidden">
-                <h2 class="text-xl font-bold mb-4">趋势图</h2>
-                <canvas id="trendsChart" class="w-full h-96"></canvas>
+                <h2 class="text-base font-bold mb-3">趋势图</h2>
+                <canvas id="trendsChart" class="w-full h-80"></canvas>
             </div>
 
             <!-- Seats Tab -->
             <div id="seatsTab" class="tab-content hidden">
-                <h2 class="text-xl font-bold mb-4">座位分配</h2>
-                <div class="mb-4 flex gap-2 items-center">
-                    <button onclick="generateSeats()" id="generateSeatsBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2 hidden">生成座位</button>
-                    <button onclick="refreshSeats()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">刷新座位</button>
-                    <button onclick="generateSeats()" id="redrawSeatsBtn" class="bg-purple-600 text-white px-3 py-2 rounded hidden">Redraw Seats</button>
+                <h2 class="text-base font-bold mb-3">座位分配</h2>
+                <div class="mb-3 flex gap-2 items-center">
+                    <button onclick="generateSeats()" id="generateSeatsBtn" class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600 hidden">生成座位</button>
+                    <button onclick="refreshSeats()" class="bg-gray-500 text-white px-3 py-1 text-sm rounded hover:bg-gray-600">刷新座位</button>
+                    <button onclick="generateSeats()" id="redrawSeatsBtn" class="bg-purple-600 text-white px-3 py-1 text-sm rounded hidden">Redraw Seats</button>
                 </div>
 
                 <!-- Table container: moved down and responsive -->
-                <div class="relative w-full flex justify-center items-center mt-16">
+                <div class="relative w-full flex justify-center items-center mt-12">
                     <!-- 椭圆桌子: width auto-fits, keeps 2:1 aspect ratio -->
                     <div id="tableEllipse" class="rounded-full table-ellipse relative" style="width: min(90vw, 600px); aspect-ratio: 2 / 1; padding-top:28px;">
                         <!-- 座位将动态生成 -->
@@ -277,15 +264,49 @@
                 </div>
             </div>
 
+            <!-- Tournament Tab -->
+            <div id="tournamentTab" class="tab-content hidden">
+                <h2 class="text-lg font-bold mb-3">赛事设置</h2>
+                
+                <!-- Buy-in & Prize Pot Section -->
+                <div class="mb-4 p-3 bg-[rgba(255,255,255,0.04)] rounded">
+                    <h3 class="font-bold mb-2 text-sm">奖池管理</h3>
+                    <div class="flex gap-2 mb-2">
+                        <input type="number" id="buyinAmount" step="0.01" placeholder="买入金额" class="flex-1 px-2 py-1 border rounded text-black text-sm">
+                        <button onclick="addBuyinToPot()" class="bg-green-600 text-white px-3 py-1 text-sm rounded hover:bg-green-700">买入</button>
+                    </div>
+                    <div class="text-sm">
+                        <span class="muted">当前奖池: </span>
+                        <span id="prizePotAmount" class="font-bold text-green-400">0.00</span>
+                    </div>
+                </div>
+                
+                <!-- Blind Structure Section -->
+                <div class="mb-4">
+                    <h3 class="font-bold mb-2 text-sm">盲注增长 (Increasing Blind)</h3>
+                    <div id="blindStructure" class="space-y-2 mb-2"></div>
+                    <button onclick="addBlindLevel()" class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600">+ 添加盲注</button>
+                </div>
+                
+                <!-- Payout Structure Section -->
+                <div class="mb-4">
+                    <h3 class="font-bold mb-2 text-sm">分配结构 (按百分比)</h3>
+                    <div id="payoutStructure" class="space-y-2 mb-2"></div>
+                    <button onclick="addPayoutRank()" class="bg-green-500 text-white px-3 py-1 text-sm rounded hover:bg-green-600">+ 添加分配排名</button>
+                </div>
+                
+                <button onclick="saveTournamentSettings()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">保存赛事设置</button>
+            </div>
+
             <!-- Random Tab -->
             <div id="randomTab" class="tab-content hidden">
-                <h2 class="text-xl font-bold mb-4">随机结果生成</h2>
-                <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Call的百分比 (%)</label>
-                    <input type="number" id="yesPercentage" min="0" max="100" value="50" class="w-full px-3 py-2 border rounded mb-2 text-black">
-                    <button id="coinFlipBtn" onclick="coinFlip()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">开始随机</button>
+                <h2 class="text-lg font-bold mb-3">随机结果生成</h2>
+                <div class="mb-3">
+                    <label class="block text-gray-600 mb-1 text-xs">Call的百分比 (%)</label>
+                    <input type="number" id="yesPercentage" min="0" max="100" value="50" class="w-full px-2 py-1 border rounded mb-2 text-black text-sm">
+                    <button id="coinFlipBtn" onclick="coinFlip()" class="bg-purple-500 text-white px-3 py-1 text-sm rounded hover:bg-purple-600">开始随机</button>
                 </div>
-                <div id="coinFlipResult" class="mt-4 text-center text-2xl font-bold min-h-[100px] flex justify-center items-center">
+                <div id="coinFlipResult" class="mt-3 text-center text-xl font-bold min-h-[80px] flex justify-center items-center">
                     <!-- 硬币动画将在这里显示 -->
                     <div id="coin" class="coin hidden"></div>
                 </div>
@@ -293,9 +314,24 @@
 
             <!-- Admin Tab -->
             <div id="adminTab" class="tab-content hidden">
-                <h2 class="text-xl font-bold mb-4">管理员面板</h2>
-                <div id="adminUserList" class="space-y-4">
-                    <!-- User management will be populated here -->
+                <h2 class="text-lg font-bold mb-3">管理员面板</h2>
+                
+                <!-- User Management Section -->
+                <div class="mb-4">
+                    <h3 class="font-bold mb-2 text-sm">用户管理</h3>
+                    <div id="adminUserList" class="space-y-2">
+                        <!-- User management will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Admin Functions Section -->
+                <div class="mb-4 p-3 bg-[rgba(255,255,255,0.04)] rounded">
+                    <h3 class="font-bold mb-2 text-sm">系统操作</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="createNewSession()" class="bg-green-500 text-white px-3 py-1 text-sm rounded hover:bg-green-600">新建游戏会话</button>
+                        <button onclick="refreshAllData()" class="bg-yellow-500 text-white px-3 py-1 text-sm rounded hover:bg-yellow-600">刷新数据</button>
+                        <button onclick="resetAllData()" class="bg-red-700 text-white px-3 py-1 text-sm rounded hover:bg-red-800">⚠️ 清空所有数据</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -329,6 +365,11 @@
                         av.textContent = currentUser.avatar || '';
                     }
                     document.getElementById('changeAvatarBtn').classList.remove('hidden');
+                    
+                    // Show admin tab for peng
+                    if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
+                        document.getElementById('adminTabBtn').classList.remove('hidden');
+                    }
                     
                     // 初始化WebSocket
                     initWebSocket();
@@ -443,8 +484,6 @@
                 
                 // 显示管理员控件
                 if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
-                    document.getElementById('adminControl').classList.remove('hidden');
-                    document.getElementById('generateSeatsBtn').classList.remove('hidden');
                     document.getElementById('adminTabBtn').classList.remove('hidden');
                 }
                 
@@ -809,113 +848,41 @@
             const msg = data.total_win_loss < 0 ? `可以让输家少输 ${Math.abs(data.total_win_loss).toFixed(2)}` : `需要让赢家少赢 ${Math.abs(data.total_win_loss).toFixed(2)}`;
             document.getElementById('totalWinLoss').textContent = `总赢亏: ${data.total_win_loss.toFixed(2)} (${msg})`;
 
-            // Desktop table
-            const leaderboardCards = document.getElementById('leaderboardCards');
-            if (leaderboardCards) {
-                leaderboardCards.innerHTML = '';
-                // compute totals and highlight top 3 with larger badges
+            const leaderboardTable = document.getElementById('leaderboardTable');
+            if (leaderboardTable) {
+                const tbody = leaderboardTable.querySelector('tbody');
+                const tfoot = leaderboardTable.querySelector('tfoot');
+                tbody.innerHTML = '';
+
                 let totals = { current: 0, brought: 0, win_loss: 0 };
                 data.scores.forEach((score, idx) => {
                     totals.current += parseFloat(score.current || 0);
                     totals.brought += parseFloat(score.brought || 0);
                     totals.win_loss += parseFloat(score.win_loss || 0);
-                    const card = document.createElement('div');
-                    card.className = 'app-card p-3 rounded-lg flex items-center justify-between gap-3';
-                    const rank = idx + 1;
-                    const badgeColor = rank === 1 ? 'bg-yellow-400' : (rank === 2 ? 'bg-gray-300' : (rank === 3 ? 'bg-amber-200' : 'bg-[rgba(255,255,255,0.03)]'));
-                    const avatarHtml = `<div class="flex items-center gap-3"><div class="w-12 h-12 rounded-full bg-[rgba(255,255,255,0.04)] flex items-center justify-center text-xl">${score.player.charAt(0).toUpperCase()}</div><div><div class="font-semibold">${score.player}</div><div class="text-sm muted">Brought: ${score.brought.toFixed(2)}</div></div></div>`;
-                    card.innerHTML = `
-                        <div class="flex items-center gap-3"> 
-                            <div class="px-2 py-1 rounded ${badgeColor} text-sm font-bold">#${rank}</div>
-                            ${avatarHtml}
-                        </div>
-                        <div class="grid grid-cols-3 gap-4 text-right min-w-[200px]">
-                            <div>
-                                <div class="text-sm muted">Current</div>
-                                <div class="font-bold">${score.current.toFixed(2)}</div>
-                            </div>
-                            <div>
-                                <div class="text-sm muted">Buy-in</div>
-                                <div class="font-bold">${score.brought.toFixed(2)}</div>
-                            </div>
-                            <div>
-                                <div class="text-sm muted">Winning</div>
-                                <div class="font-bold ${score.win_loss>=0 ? 'text-green-400' : 'text-red-400'}">${score.win_loss.toFixed(2)}</div>
-                            </div>
-                        </div>
-                    `;
-                    leaderboardCards.appendChild(card);
-                });
 
-                // Append totals summary card
-                const totalCard = document.createElement('div');
-                totalCard.className = 'app-card p-3 rounded-lg flex items-center justify-between gap-3';
-                totalCard.innerHTML = `
-                    <div class="flex items-center gap-3"> 
-                        <div class="px-2 py-1 rounded bg-[rgba(255,255,255,0.03)] text-sm font-bold">Total</div>
-                        <div class="font-semibold">Overall</div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-4 text-right min-w-[200px]">
-                        <div>
-                            <div class="text-sm muted">Current</div>
-                            <div class="font-bold">${totals.current.toFixed(2)}</div>
-                        </div>
-                        <div>
-                            <div class="text-sm muted">Buy-in</div>
-                            <div class="font-bold">${totals.brought.toFixed(2)}</div>
-                        </div>
-                        <div>
-                            <div class="text-sm muted">Winning</div>
-                            <div class="font-bold ${totals.win_loss>=0 ? 'text-green-400' : 'text-red-400'}">${totals.win_loss.toFixed(2)}</div>
-                        </div>
-                    </div>
-                `;
-                leaderboardCards.appendChild(totalCard);
-            }
-
-            // Mobile list
-            const list = document.getElementById('leaderboardList');
-            if (list) {
-                list.innerHTML = '';
-                let totalsMobile = { current: 0, brought: 0, win_loss: 0 };
-                data.scores.forEach(score => {
-                    totalsMobile.current += parseFloat(score.current || 0);
-                    totalsMobile.brought += parseFloat(score.brought || 0);
-                    totalsMobile.win_loss += parseFloat(score.win_loss || 0);
-                    const card = document.createElement('div');
-                    card.className = 'app-card p-3 rounded-lg mb-3';
                     const winLossClass = score.win_loss >= 0 ? 'text-green-400' : 'text-red-400';
-                    card.innerHTML = `
-                        <div class="leader-grid">
-                            <div class="leader-name">
-                                <div class="font-bold">${score.player}</div>
-                                <div class="font-bold text-right">${score.current.toFixed(2)}</div>
-                            </div>
-                            <div class="leader-values">
-                                <div class="font-bold text-right">${score.brought.toFixed(2)}</div>
-                                <div class="font-bold ${winLossClass} text-right">${score.win_loss.toFixed(2)}</div>
-                            </div>
-                        </div>
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="font-semibold">${score.player}</td>
+                        <td>${score.brought.toFixed(2)}</td>
+                        <td>${score.current.toFixed(2)}</td>
+                        <td class="${winLossClass}">${score.win_loss.toFixed(2)}</td>
                     `;
-                    list.appendChild(card);
+                    tbody.appendChild(row);
                 });
 
-                // mobile totals card
-                const mobileTotal = document.createElement('div');
-                mobileTotal.className = 'app-card p-3 rounded-lg mb-3';
-                mobileTotal.innerHTML = `
-                    <div class="leader-grid">
-                        <div class="leader-name">
-                            <div class="font-bold">Total</div>
-                            <div class="font-bold text-right">${totalsMobile.current.toFixed(2)}</div>
-                        </div>
-                        <div class="leader-values">
-                            <div class="font-bold text-right">${totalsMobile.brought.toFixed(2)}</div>
-                            <div class="font-bold ${totalsMobile.win_loss>=0 ? 'text-green-400' : 'text-red-400'} text-right">${totalsMobile.win_loss.toFixed(2)}</div>
-                        </div>
-                    </div>
-                `;
-                list.appendChild(mobileTotal);
+                if (tfoot) {
+                    const totalBuyin = tfoot.querySelector('#totalBuyin');
+                    const totalCurrent = tfoot.querySelector('#totalCurrent');
+                    const totalWinLoss = tfoot.querySelector('#totalWinLoss');
+
+                    if (totalBuyin) totalBuyin.textContent = totals.brought.toFixed(2);
+                    if (totalCurrent) totalCurrent.textContent = totals.current.toFixed(2);
+                    if (totalWinLoss) {
+                        totalWinLoss.textContent = totals.win_loss.toFixed(2);
+                        totalWinLoss.className = totals.win_loss >= 0 ? 'text-green-400' : 'text-red-400';
+                    }
+                }
             }
         }
 
@@ -1393,6 +1360,147 @@
             addActivityLog(`随机结果: ${display} (概率: ${document.getElementById('yesPercentage').value}%)`);
         }
 
+        // Tournament Management Functions
+        let tournamentData = {
+            blinds: [],
+            payouts: [],
+            prize_pot: 0
+        };
+
+        async function loadTournamentSettings() {
+            try {
+                const resp = await fetch('/api/tournament_settings');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.success) {
+                        tournamentData = data.data || { blinds: [], payouts: [], prize_pot: 0 };
+                        renderBlindStructure();
+                        renderPayoutStructure();
+                        updatePrizePotDisplay();
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading tournament settings:', e);
+            }
+        }
+
+        function updatePrizePotDisplay() {
+            const display = document.getElementById('prizePotAmount');
+            if (display) {
+                display.textContent = (tournamentData.prize_pot || 0).toFixed(2);
+            }
+        }
+
+        function addBuyinToPot() {
+            const input = document.getElementById('buyinAmount');
+            const amount = parseFloat(input.value);
+            if (isNaN(amount) || amount <= 0) {
+                alert('请输入有效的买入金额');
+                return;
+            }
+            tournamentData.prize_pot = (tournamentData.prize_pot || 0) + amount;
+            updatePrizePotDisplay();
+            input.value = '';
+            addActivityLog(`添加买入: ${amount.toFixed(2)} 到奖池，当前奖池: ${(tournamentData.prize_pot).toFixed(2)}`);
+        }
+
+        function addBlindLevel() {
+            tournamentData.blinds.push({ level: tournamentData.blinds.length + 1, small_blind: 1, big_blind: 2, ante: 0 });
+            renderBlindStructure();
+        }
+
+        function removeBlindLevel(index) {
+            tournamentData.blinds.splice(index, 1);
+            renderBlindStructure();
+        }
+
+        function renderBlindStructure() {
+            const container = document.getElementById('blindStructure');
+            container.innerHTML = '';
+            tournamentData.blinds.forEach((blind, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex gap-1 items-center p-2 bg-[rgba(255,255,255,0.04)] rounded text-sm';
+                div.innerHTML = `
+                    <span class="w-14 text-xs font-semibold">L${blind.level}</span>
+                    <input type="number" value="${blind.small_blind}" placeholder="SB" min="0" step="0.5" class="blind-sb w-16 px-2 py-1 border rounded text-black text-xs">
+                    <span class="text-xs">/</span>
+                    <input type="number" value="${blind.big_blind}" placeholder="BB" min="0" step="0.5" class="blind-bb w-16 px-2 py-1 border rounded text-black text-xs">
+                    <span class="text-xs">A:</span>
+                    <input type="number" value="${blind.ante || 0}" placeholder="0" min="0" step="0.5" class="blind-ante w-14 px-2 py-1 border rounded text-black text-xs">
+                    <button onclick="removeBlindLevel(${idx})" class="ml-auto bg-red-500 text-white px-2 py-1 text-xs rounded hover:bg-red-600">-</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addPayoutRank() {
+            const place = tournamentData.payouts.length + 1;
+            tournamentData.payouts.push({ place: place, percentage: 30 });
+            renderPayoutStructure();
+        }
+
+        function removePayoutRank(index) {
+            tournamentData.payouts.splice(index, 1);
+            renderPayoutStructure();
+        }
+
+        function renderPayoutStructure() {
+            const container = document.getElementById('payoutStructure');
+            container.innerHTML = '';
+            tournamentData.payouts.forEach((payout, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex gap-2 items-center p-2 bg-[rgba(255,255,255,0.04)] rounded text-sm';
+                const payoutAmount = tournamentData.prize_pot ? ((tournamentData.prize_pot * payout.percentage) / 100).toFixed(2) : '0.00';
+                div.innerHTML = `
+                    <span class="w-16 text-xs font-semibold">Place ${payout.place}</span>
+                    <input type="number" value="${payout.percentage}" placeholder="%" min="0" max="100" step="1" class="payout-pct w-16 px-2 py-1 border rounded text-black text-xs">
+                    <span class="text-xs text-gray-400">%</span>
+                    <span class="text-xs text-green-400 ml-auto min-w-16 text-right">${payoutAmount}</span>
+                    <button onclick="removePayoutRank(${idx})" class="bg-red-500 text-white px-2 py-1 text-xs rounded hover:bg-red-600">-</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function saveTournamentSettings() {
+            // Collect data from form inputs
+            const blindInputs = document.querySelectorAll('.blind-sb');
+            blindInputs.forEach((input, idx) => {
+                if (tournamentData.blinds[idx]) {
+                    tournamentData.blinds[idx].small_blind = parseFloat(input.value) || 0;
+                    const bbInputs = document.querySelectorAll('.blind-bb');
+                    tournamentData.blinds[idx].big_blind = parseFloat(bbInputs[idx].value) || 0;
+                    const anteInputs = document.querySelectorAll('.blind-ante');
+                    tournamentData.blinds[idx].ante = parseFloat(anteInputs[idx].value) || 0;
+                }
+            });
+
+            const payoutInputs = document.querySelectorAll('.payout-pct');
+            payoutInputs.forEach((input, idx) => {
+                if (tournamentData.payouts[idx]) {
+                    tournamentData.payouts[idx].percentage = parseFloat(input.value) || 0;
+                }
+            });
+
+            try {
+                const resp = await fetch('/api/tournament_settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(tournamentData)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    addActivityLog('赛事设置已保存');
+                    alert('赛事设置已保存');
+                } else {
+                    alert(data.message || '保存失败');
+                }
+            } catch (e) {
+                console.error('Error saving tournament settings:', e);
+                alert('无法保存赛事设置');
+            }
+        }
+
         // 新建游戏会话
         async function createNewSession() {
             if (!currentUser || !(currentUser.is_admin || currentUser.username.toLowerCase() === 'peng')) {
@@ -1468,7 +1576,11 @@
             loadLeaderboard();
             loadTrends();
             refreshSeats();
+            loadTournamentSettings();
+            loadAdminUserList();
         }
+
+
 
         // Avatar change modal
         function openAvatarModal() {
