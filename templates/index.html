@@ -266,7 +266,44 @@
 
             <!-- Tournament Tab -->
             <div id="tournamentTab" class="tab-content hidden">
-                <h2 class="text-lg font-bold mb-3">赛事设置</h2>
+                <!-- Tournament Display Section -->
+                <div class="mb-4 p-6 bg-gradient-to-b from-[rgba(139,92,246,0.2)] to-[rgba(59,130,246,0.2)] rounded-lg border border-[rgba(139,92,246,0.3)] text-center">
+                    <div id="tournamentName" class="text-2xl font-bold mb-4 text-purple-300">Tournament</div>
+                    
+                    <!-- Level & Countdown -->
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-[rgba(0,0,0,0.3)] p-4 rounded">
+                            <div class="text-xs muted mb-1">Level</div>
+                            <div id="currentLevel" class="text-3xl font-bold text-blue-400">1</div>
+                        </div>
+                        <div class="bg-[rgba(0,0,0,0.3)] p-4 rounded">
+                            <div class="text-xs muted mb-1">Time Left</div>
+                            <div id="levelCountdown" class="text-3xl font-bold text-green-400">00:00</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Current Blinds -->
+                    <div class="mb-4">
+                        <div class="text-xs muted mb-2">Current Blinds</div>
+                        <div id="currentBlinds" class="text-4xl font-bold text-yellow-300">1 | 2 (0)</div>
+                    </div>
+                    
+                    <!-- Next Blind -->
+                    <div class="bg-[rgba(0,0,0,0.2)] p-2 rounded">
+                        <div class="text-xs muted mb-1">Next Blind</div>
+                        <div id="nextBlinds" class="text-lg font-semibold text-gray-300">2 | 4 (0)</div>
+                    </div>
+                </div>
+                
+                <!-- Tournament Controls -->
+                <div class="mb-4 p-3 bg-[rgba(255,255,255,0.04)] rounded">
+                    <h3 class="font-bold mb-2 text-sm">赛事控制</h3>
+                    <div class="flex gap-2">
+                        <button onclick="startBlindLevel()" class="flex-1 bg-green-600 text-white px-3 py-2 text-sm rounded hover:bg-green-700">开始盲注</button>
+                        <button onclick="nextBlindLevel()" class="flex-1 bg-blue-600 text-white px-3 py-2 text-sm rounded hover:bg-blue-700">下一盲注</button>
+                        <button onclick="resetBlindLevel()" class="flex-1 bg-red-600 text-white px-3 py-2 text-sm rounded hover:bg-red-700">重置</button>
+                    </div>
+                </div>
                 
                 <!-- Buy-in & Prize Pot Section -->
                 <div class="mb-4 p-3 bg-[rgba(255,255,255,0.04)] rounded">
@@ -1377,6 +1414,7 @@
                         renderBlindStructure();
                         renderPayoutStructure();
                         updatePrizePotDisplay();
+                        updateTournamentDisplay();
                     }
                 }
             } catch (e) {
@@ -1460,6 +1498,115 @@
                 `;
                 container.appendChild(div);
             });
+        }
+
+        // Tournament Display State
+        let tournamentState = {
+            currentLevel: 0,
+            levelStartTime: null,
+            levelDuration: 0,
+            countdownInterval: null,
+            isRunning: false
+        };
+
+        // Update tournament display
+        function updateTournamentDisplay() {
+            if (tournamentData.blinds.length === 0) return;
+
+            const level = Math.max(0, Math.min(tournamentState.currentLevel, tournamentData.blinds.length - 1));
+            const currentBlind = tournamentData.blinds[level];
+            const nextBlind = level + 1 < tournamentData.blinds.length ? tournamentData.blinds[level + 1] : null;
+
+            // Update current level
+            document.getElementById('currentLevel').textContent = level + 1;
+
+            // Update current blinds display (SB | BB (Ante))
+            document.getElementById('currentBlinds').textContent = 
+                `${currentBlind.small_blind} | ${currentBlind.big_blind} (${currentBlind.ante || 0})`;
+
+            // Update next blinds display
+            if (nextBlind) {
+                document.getElementById('nextBlinds').textContent = 
+                    `${nextBlind.small_blind} | ${nextBlind.big_blind} (${nextBlind.ante || 0})`;
+            } else {
+                document.getElementById('nextBlinds').textContent = '-- Final Level --';
+            }
+        }
+
+        // Start blind level timer
+        function startBlindLevel() {
+            if (tournamentState.isRunning) {
+                alert('计时器已在运行');
+                return;
+            }
+
+            const durationStr = prompt('输入盲注级别时间 (分钟):', '15');
+            if (!durationStr || isNaN(durationStr) || parseInt(durationStr) < 1) {
+                alert('请输入有效的时间');
+                return;
+            }
+
+            const duration = parseInt(durationStr) * 60; // convert to seconds
+            tournamentState.levelDuration = duration;
+            tournamentState.levelStartTime = Date.now();
+            tournamentState.isRunning = true;
+
+            clearInterval(tournamentState.countdownInterval);
+            updateCountdown();
+            tournamentState.countdownInterval = setInterval(updateCountdown, 1000);
+            addActivityLog(`开始盲注级别 ${tournamentState.currentLevel + 1} (${durationStr} 分钟)`);
+        }
+
+        // Update countdown display
+        function updateCountdown() {
+            if (!tournamentState.isRunning || !tournamentState.levelStartTime) return;
+
+            const elapsed = Math.floor((Date.now() - tournamentState.levelStartTime) / 1000);
+            const remaining = Math.max(0, tournamentState.levelDuration - elapsed);
+
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            document.getElementById('levelCountdown').textContent = 
+                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+            if (remaining === 0) {
+                clearInterval(tournamentState.countdownInterval);
+                tournamentState.isRunning = false;
+                addActivityLog('⏰ 盲注级别时间已到！');
+                alert('盲注级别时间已到！请进行下一盲注或继续。');
+            }
+        }
+
+        // Move to next blind level
+        function nextBlindLevel() {
+            if (tournamentState.isRunning) {
+                clearInterval(tournamentState.countdownInterval);
+                tournamentState.isRunning = false;
+            }
+
+            if (tournamentState.currentLevel + 1 < tournamentData.blinds.length) {
+                tournamentState.currentLevel++;
+                updateTournamentDisplay();
+                addActivityLog(`进入盲注级别 ${tournamentState.currentLevel + 1}`);
+            } else {
+                alert('已经是最后一个盲注级别');
+            }
+        }
+
+        // Reset tournament to level 1
+        function resetBlindLevel() {
+            if (confirm('确定要重置赛事到第一个盲注级别吗？')) {
+                if (tournamentState.isRunning) {
+                    clearInterval(tournamentState.countdownInterval);
+                    tournamentState.isRunning = false;
+                }
+                tournamentState.currentLevel = 0;
+                tournamentState.levelStartTime = null;
+                tournamentState.levelDuration = 0;
+                document.getElementById('levelCountdown').textContent = '00:00';
+                updateTournamentDisplay();
+                addActivityLog('赛事已重置到第一个盲注级别');
+            }
         }
 
         async function saveTournamentSettings() {
