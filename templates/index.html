@@ -10,19 +10,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root{
-            --bg:#0b1020;
-            --card:#0f1724;
-            --muted:#9aa4b2;
-            --accent:#7c3aed;
+            --bg:#0f1419;
+            --card:#1a2332;
+            --muted:#7c8894;
+            --accent:#3b82f6;
             --glass: rgba(255,255,255,0.04);
+            --text-primary:#f0f4f8;
+            --text-secondary:#cbd5e1;
         }
-        html,body{height:100%;font-size:13px;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
-        body{background:linear-gradient(180deg,var(--bg),#020617);color:#e6eef8;margin:0}
-        .app-card{background:linear-gradient(180deg,var(--card),#07111b);box-shadow:0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+        html,body{height:100%;font-size:14px;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;font-weight:500}
+        body{background:linear-gradient(180deg,var(--bg),#0a0e14);color:var(--text-primary);margin:0}
+        .app-card{background:linear-gradient(135deg,var(--card),#141d2a);box-shadow:0 8px 24px rgba(0,0,0,0.8);border:1px solid rgba(59,130,246,0.1)}
         .muted{color:var(--muted)}
-        .tab-btn{padding:8px 12px;font-size:12px;border-radius:10px;background:transparent;color:var(--muted);border:1px solid transparent;transition:all .18s}
-        .tab-btn:hover{color:#fff;border-color:rgba(124,58,237,0.12);transform:translateY(-2px)}
-        .tab-btn.active{background:linear-gradient(90deg, rgba(124,58,237,0.18), rgba(59,130,246,0.06));color:#fff;box-shadow:0 8px 30px rgba(124,58,237,0.08)}
+        .tab-btn{padding:10px 16px;font-size:13px;font-weight:600;border-radius:12px;background:transparent;color:var(--muted);border:1px solid transparent;transition:all 0.2s}
+        .tab-btn:hover{color:var(--text-primary);background:rgba(59,130,246,0.1);transform:translateY(-2px)}
+        .tab-btn.active{background:linear-gradient(135deg, rgba(59,130,246,0.25), rgba(59,130,246,0.1));color:#3b82f6;border-color:rgba(59,130,246,0.4);box-shadow:0 4px 12px rgba(59,130,246,0.15)}
         .coin{width:96px;height:96px;perspective:1000px}
         .coin-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 1s}
         .coin-face{position:absolute;inset:0;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:800;font-size:20px}
@@ -31,29 +33,31 @@
         .coin.flipY .coin-inner{transform:rotateY(720deg)}
 
         /* responsive tweaks */
-        .container{max-width:1200px;padding:12px;margin:0 auto}
-        #onlineUsers{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
-        .online-card{min-width:70px;width:70px;flex:0 0 auto}
-        h1,h2,h3,h4,h5,h6{line-height:1.2;margin:8px 0}
-        label{font-size:12px}
-        input,textarea,select{font-size:13px!important}
+        .container{max-width:1200px;padding:16px;margin:0 auto}
+        #onlineUsers{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px}
+        .online-card{min-width:80px;width:80px;flex:0 0 auto}
+        h1,h2,h3,h4,h5,h6{line-height:1.2;margin:12px 0;font-weight:700;color:var(--text-primary)}
+        label{font-size:13px;font-weight:600;color:var(--text-secondary)}
+        input,textarea,select{font-size:14px!important;background:#0a0e14;color:#ffffff;border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:8px 12px}
+        input::placeholder{color:#7c8894}
+        input:focus,textarea:focus,select:focus{outline:none;border-color:rgba(59,130,246,0.5);box-shadow:0 0 0 3px rgba(59,130,246,0.1)}
 
         .leaderboard-table-container{width:100%;overflow:hidden;margin-top:0.5rem;}
         .leaderboard-table-container::-webkit-scrollbar{display:none}
         .leaderboard-table-container{-ms-overflow-style:none;scrollbar-width:none}
         #leaderboardTable{width:100%;border-collapse:collapse;table-layout:fixed}
-        #leaderboardTable th,#leaderboardTable td{padding:0.5rem 0.25rem;text-align:right;border-bottom:1px solid rgba(255,255,255,0.12);font-size:2.25rem;line-height:1.1}
+        #leaderboardTable th,#leaderboardTable td{padding:0.75rem 0.5rem;text-align:right;border-bottom:1px solid rgba(59,130,246,0.15);font-size:1.8rem;line-height:1.1;font-weight:600}
         #leaderboardTable th:first-child,#leaderboardTable td:first-child{text-align:left;}
-        #leaderboardTable th{font-weight:700;color:#9aa4b2;letter-spacing:.01em;text-transform:uppercase;word-break:break-word;font-size:2.25rem;line-height:1.1}
-        #leaderboardTable tbody tr:hover{background:rgba(255,255,255,0.04);}
-        #leaderboardTable tfoot td{font-weight:700;border-top:2px solid rgba(255,255,255,0.16);}
+        #leaderboardTable th{font-weight:700;color:var(--muted);letter-spacing:.02em;text-transform:uppercase;word-break:break-word}
+        #leaderboardTable tbody tr:hover{background:rgba(59,130,246,0.08);}
+        #leaderboardTable tfoot td{font-weight:700;border-top:2px solid rgba(59,130,246,0.2);color:var(--text-primary)}
         #leaderboardTable td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         #leaderboardTable td:first-child{white-space:normal}
         @media (max-width: 720px){
-            #leaderboardTable th,#leaderboardTable td{padding:0.4rem 0.2rem;font-size:0.7rem}
+            #leaderboardTable th,#leaderboardTable td{padding:0.5rem 0.2rem;font-size:0.85rem}
         }
 
-        .table-ellipse{background:linear-gradient(180deg,#062018,#08302a);border-radius:9999px}
+        .table-ellipse{background:linear-gradient(180deg,#0f2c1f,#0a1f15);border:2px solid rgba(59,130,246,0.2);border-radius:9999px}
     </style>
 </head>
 <body class="min-h-screen">
@@ -69,11 +73,7 @@
                 <div id="loginForm">
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">用户名</label>
-                        <input type="text" id="loginUsername" class="w-full px-3 py-2 border rounded text-black">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 mb-2">密码</label>
-                        <input type="password" id="loginPassword" class="w-full px-3 py-2 border rounded text-black">
+                        <input type="text" id="loginUsername" class="w-full px-3 py-2 border rounded">
                     </div>
                     <button onclick="login()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">登录</button>
                     <p class="mt-2 text-sm">没有账号？<a onclick="toggleAuthModal('register')" class="text-blue-500">注册</a></p>
@@ -83,11 +83,7 @@
                 <div id="registerForm" class="hidden">
                     <div class="mb-4">
                         <label class="block text-gray-700 mb-2">用户名</label>
-                        <input type="text" id="regUsername" class="w-full px-3 py-2 border rounded text-black">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 mb-2">密码</label>
-                        <input type="password" id="regPassword" class="w-full px-3 py-2 border rounded text-black">
+                        <input type="text" id="regUsername" class="w-full px-3 py-2 border rounded">
                     </div>
                     <div class="mb-4">
                             <label class="block text-gray-700 mb-2">头像（请选择一个表情，唯一）</label>
@@ -168,7 +164,7 @@
                     <div class="mb-3">
                         <label class="block text-gray-700 mb-1 text-xs">Buy In / Cash Out</label>
                         <div class="flex gap-2">
-                            <input type="number" id="pointsAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-black text-sm">
+                            <input type="number" id="pointsAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-sm">
                             <button onclick="performPointsAction('buy_in')" class="bg-green-500 text-white px-3 py-1 text-sm rounded">Buy In</button>
                             <button onclick="performPointsAction('cash_out')" class="bg-red-500 text-white px-3 py-1 text-sm rounded">Cash Out</button>
                         </div>
@@ -177,7 +173,7 @@
                     <div class="mb-3">
                         <label class="block text-gray-700 mb-1 text-xs">Set Current</label>
                         <div class="flex gap-2">
-                            <input type="number" id="setCurrentAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-black text-sm">
+                            <input type="number" id="setCurrentAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-sm">
                             <button onclick="performPointsAction('set_current', true)" class="bg-blue-500 text-white px-3 py-1 text-sm rounded">Set Current</button>
                         </div>
                     </div>
@@ -185,7 +181,7 @@
                     <div class="mb-3">
                         <label class="block text-gray-700 mb-1 text-xs">Win / Loss</label>
                         <div class="flex gap-2 mb-2">
-                            <input type="number" id="wlAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-black text-sm">
+                            <input type="number" id="wlAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-sm">
                             <div id="targetUserButtons" class="flex flex-wrap gap-2"></div>
                         </div>
                         <div class="flex gap-2">
@@ -242,7 +238,9 @@
             <!-- Trends Tab -->
             <div id="trendsTab" class="tab-content hidden">
                 <h2 class="text-base font-bold mb-3">趋势图</h2>
-                <canvas id="trendsChart" class="w-full h-80"></canvas>
+                <div style="position:relative;width:100%;height:auto;min-height:300px">
+                    <canvas id="trendsChart" style="max-height:600px"></canvas>
+                </div>
             </div>
 
             <!-- Seats Tab -->
@@ -267,72 +265,110 @@
             <!-- Tournament Tab -->
             <div id="tournamentTab" class="tab-content hidden">
                 <!-- Tournament Display Section -->
-                <div class="mb-4 p-6 bg-gradient-to-b from-[rgba(139,92,246,0.2)] to-[rgba(59,130,246,0.2)] rounded-lg border border-[rgba(139,92,246,0.3)] text-center">
-                    <div id="tournamentName" class="text-2xl font-bold mb-4 text-purple-300">Tournament</div>
+                <div class="mb-4 p-6 bg-gradient-to-b from-[rgba(139,92,246,0.2)] to-[rgba(59,130,246,0.2)] rounded-lg border border-[rgba(139,92,246,0.3)]">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="text-2xl font-bold text-purple-300">Tournament</div>
+                        <button id="tournamentEditBtn" onclick="toggleTournamentEditMode()" class="bg-blue-600 text-white px-4 py-2 text-sm font-bold rounded hover:bg-blue-700">✏️ Edit</button>
+                    </div>
                     
-                    <!-- Level & Countdown -->
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div class="bg-[rgba(0,0,0,0.3)] p-4 rounded">
-                            <div class="text-xs muted mb-1">Level</div>
-                            <div id="currentLevel" class="text-3xl font-bold text-blue-400">1</div>
+                    <!-- Display Mode (Default) -->
+                    <div id="tournamentDisplayMode" class="space-y-4">
+                        <!-- Level & Time Control -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-[rgba(0,0,0,0.3)] p-4 rounded text-center">
+                                <div class="text-xs muted mb-2">Level</div>
+                                <div id="displayLevel" class="text-3xl font-bold text-blue-400">1</div>
+                            </div>
+                            <div class="bg-[rgba(0,0,0,0.3)] p-4 rounded text-center">
+                                <div class="text-xs muted mb-2">Time</div>
+                                <div id="displayTime" class="text-2xl font-bold text-orange-400">15:00</div>
+                            </div>
                         </div>
-                        <div class="bg-[rgba(0,0,0,0.3)] p-4 rounded">
-                            <div class="text-xs muted mb-1">Time Left</div>
-                            <div id="levelCountdown" class="text-3xl font-bold text-green-400">00:00</div>
+                        
+                        <!-- Countdown Display -->
+                        <div class="bg-[rgba(0,0,0,0.5)] p-4 rounded text-center">
+                            <div class="text-xs muted mb-2">Time Left</div>
+                            <div id="levelCountdown" class="text-5xl font-bold text-green-400">00:00</div>
+                        </div>
+                        
+                        <!-- Current Blinds Display -->
+                        <div class="mb-2 p-3 bg-[rgba(0,0,0,0.2)] rounded text-center">
+                            <label class="text-xs muted mb-2 block font-bold">Current Blinds</label>
+                            <div id="displayCurrentBlinds" class="text-3xl font-bold text-yellow-300">1 | 2 (0)</div>
+                        </div>
+
+                        <!-- Next Blinds Display -->
+                        <div class="p-3 bg-[rgba(0,0,0,0.2)] rounded text-center">
+                            <label class="text-xs muted mb-2 block font-bold">Next Blinds</label>
+                            <div id="displayNextBlinds" class="text-2xl font-bold text-gray-300">2 | 4 (0)</div>
                         </div>
                     </div>
-                    
-                    <!-- Current Blinds -->
-                    <div class="mb-4">
-                        <div class="text-xs muted mb-2">Current Blinds</div>
-                        <div id="currentBlinds" class="text-4xl font-bold text-yellow-300">1 | 2 (0)</div>
-                    </div>
-                    
-                    <!-- Next Blind -->
-                    <div class="bg-[rgba(0,0,0,0.2)] p-2 rounded">
-                        <div class="text-xs muted mb-1">Next Blind</div>
-                        <div id="nextBlinds" class="text-lg font-semibold text-gray-300">2 | 4 (0)</div>
+
+                    <!-- Edit Mode -->
+                    <div id="tournamentEditMode" class="space-y-4 hidden">
+                        <!-- Level & Time Control -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-[rgba(0,0,0,0.3)] p-4 rounded">
+                                <label class="text-xs muted mb-2 block">Level</label>
+                                <input type="number" id="editLevel" min="1" value="1" class="w-full px-2 py-2 border rounded text-center text-lg font-bold">
+                            </div>
+                            <div class="bg-[rgba(0,0,0,0.3)] p-4 rounded">
+                                <label class="text-xs muted mb-2 block">Time (分钟)</label>
+                                <input type="number" id="editTime" min="1" value="15" class="w-full px-2 py-2 border rounded text-center text-lg font-bold">
+                            </div>
+                        </div>
+                        
+                        <!-- Current Blinds Edit -->
+                        <div class="p-3 bg-[rgba(0,0,0,0.2)] rounded">
+                            <label class="text-xs muted mb-2 block font-bold">Current Blinds</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="text-xs muted mb-1 block">SB</label>
+                                    <input type="number" id="editCurrentSB" step="0.5" min="0" value="1" class="w-full px-2 py-2 border rounded text-center text-sm font-bold">
+                                </div>
+                                <div>
+                                    <label class="text-xs muted mb-1 block">BB</label>
+                                    <input type="number" id="editCurrentBB" step="0.5" min="0" value="2" class="w-full px-2 py-2 border rounded text-center text-sm font-bold">
+                                </div>
+                                <div>
+                                    <label class="text-xs muted mb-1 block">Ante</label>
+                                    <input type="number" id="editCurrentAnte" step="0.5" min="0" value="0" class="w-full px-2 py-2 border rounded text-center text-sm font-bold">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Next Blinds Edit -->
+                        <div class="p-3 bg-[rgba(0,0,0,0.2)] rounded">
+                            <label class="text-xs muted mb-2 block font-bold">Next Blinds</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="text-xs muted mb-1 block">SB</label>
+                                    <input type="number" id="editNextSB" step="0.5" min="0" value="2" class="w-full px-2 py-2 border rounded text-center text-sm font-bold">
+                                </div>
+                                <div>
+                                    <label class="text-xs muted mb-1 block">BB</label>
+                                    <input type="number" id="editNextBB" step="0.5" min="0" value="4" class="w-full px-2 py-2 border rounded text-center text-sm font-bold">
+                                </div>
+                                <div>
+                                    <label class="text-xs muted mb-1 block">Ante</label>
+                                    <input type="number" id="editNextAnte" step="0.5" min="0" value="0" class="w-full px-2 py-2 border rounded text-center text-sm font-bold">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Tournament Controls -->
-                <div class="mb-4 p-3 bg-[rgba(255,255,255,0.04)] rounded">
-                    <h3 class="font-bold mb-2 text-sm">赛事控制</h3>
-                    <div class="flex gap-2">
-                        <button onclick="startBlindLevel()" class="flex-1 bg-green-600 text-white px-3 py-2 text-sm rounded hover:bg-green-700">开始盲注</button>
-                        <button onclick="nextBlindLevel()" class="flex-1 bg-blue-600 text-white px-3 py-2 text-sm rounded hover:bg-blue-700">下一盲注</button>
-                        <button onclick="resetBlindLevel()" class="flex-1 bg-red-600 text-white px-3 py-2 text-sm rounded hover:bg-red-700">重置</button>
-                    </div>
+                <!-- Control Buttons -->
+                <div id="displayControlButtons" class="flex gap-2">
+                    <button onclick="startTournamentTimer()" class="flex-1 bg-green-600 text-white px-3 py-3 text-sm font-bold rounded hover:bg-green-700">▶ Start</button>
+                    <button onclick="pauseTournamentTimer()" class="flex-1 bg-yellow-600 text-white px-3 py-3 text-sm font-bold rounded hover:bg-yellow-700">⏸ Pause</button>
+                    <button onclick="resetTournamentTimer()" class="flex-1 bg-red-600 text-white px-3 py-3 text-sm font-bold rounded hover:bg-red-700">⏹ Reset</button>
                 </div>
-                
-                <!-- Buy-in & Prize Pot Section -->
-                <div class="mb-4 p-3 bg-[rgba(255,255,255,0.04)] rounded">
-                    <h3 class="font-bold mb-2 text-sm">奖池管理</h3>
-                    <div class="flex gap-2 mb-2">
-                        <input type="number" id="buyinAmount" step="0.01" placeholder="买入金额" class="flex-1 px-2 py-1 border rounded text-black text-sm">
-                        <button onclick="addBuyinToPot()" class="bg-green-600 text-white px-3 py-1 text-sm rounded hover:bg-green-700">买入</button>
-                    </div>
-                    <div class="text-sm">
-                        <span class="muted">当前奖池: </span>
-                        <span id="prizePotAmount" class="font-bold text-green-400">0.00</span>
-                    </div>
+
+                <div id="editControlButtons" class="flex gap-2 hidden mt-4">
+                    <button onclick="saveTournamentChanges()" class="flex-1 bg-green-600 text-white px-3 py-3 text-sm font-bold rounded hover:bg-green-700">💾 Save</button>
+                    <button onclick="cancelTournamentEdit()" class="flex-1 bg-gray-600 text-white px-3 py-3 text-sm font-bold rounded hover:bg-gray-700">✕ Cancel</button>
                 </div>
-                
-                <!-- Blind Structure Section -->
-                <div class="mb-4">
-                    <h3 class="font-bold mb-2 text-sm">盲注增长 (Increasing Blind)</h3>
-                    <div id="blindStructure" class="space-y-2 mb-2"></div>
-                    <button onclick="addBlindLevel()" class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600">+ 添加盲注</button>
-                </div>
-                
-                <!-- Payout Structure Section -->
-                <div class="mb-4">
-                    <h3 class="font-bold mb-2 text-sm">分配结构 (按百分比)</h3>
-                    <div id="payoutStructure" class="space-y-2 mb-2"></div>
-                    <button onclick="addPayoutRank()" class="bg-green-500 text-white px-3 py-1 text-sm rounded hover:bg-green-600">+ 添加分配排名</button>
-                </div>
-                
-                <button onclick="saveTournamentSettings()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">保存赛事设置</button>
             </div>
 
             <!-- Random Tab -->
@@ -340,7 +376,7 @@
                 <h2 class="text-lg font-bold mb-3">随机结果生成</h2>
                 <div class="mb-3">
                     <label class="block text-gray-600 mb-1 text-xs">Call的百分比 (%)</label>
-                    <input type="number" id="yesPercentage" min="0" max="100" value="50" class="w-full px-2 py-1 border rounded mb-2 text-black text-sm">
+                    <input type="number" id="yesPercentage" min="0" max="100" value="50" class="w-full px-2 py-1 border rounded mb-2 text-sm">
                     <button id="coinFlipBtn" onclick="coinFlip()" class="bg-purple-500 text-white px-3 py-1 text-sm rounded hover:bg-purple-600">开始随机</button>
                 </div>
                 <div id="coinFlipResult" class="mt-3 text-center text-xl font-bold min-h-[80px] flex justify-center items-center">
@@ -416,7 +452,6 @@
                     
                     // 显示管理员控件
                     if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
-                        document.getElementById('adminControl').classList.remove('hidden');
                         document.getElementById('generateSeatsBtn').classList.remove('hidden');
                         document.getElementById('adminTabBtn').classList.remove('hidden');
                     }
@@ -468,7 +503,6 @@
                 authTitle.textContent = '登录';
                 // Clear register form
                 document.getElementById('regUsername').value = '';
-                document.getElementById('regPassword').value = '';
                 document.getElementById('regAvatar').value = 'default_avatar.png';
                 document.getElementById('avatarPicker').querySelectorAll('button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
             } else {
@@ -477,7 +511,6 @@
                 authTitle.textContent = '注册';
                 // Clear login form
                 document.getElementById('loginUsername').value = '';
-                document.getElementById('loginPassword').value = '';
                 // 加载头像选择器（emoji 列表）
                 loadAvatarPicker();
             }
@@ -486,14 +519,18 @@
         // 登录
         async function login() {
             const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
+            
+            if (!username) {
+                alert('请输入用户名');
+                return;
+            }
             
             const response = await fetch('/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `username=${username}&password=${password}`
+                body: `username=${username}`
             });
             
             const data = await response.json();
@@ -522,6 +559,7 @@
                 // 显示管理员控件
                 if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
                     document.getElementById('adminTabBtn').classList.remove('hidden');
+                    document.getElementById('generateSeatsBtn').classList.remove('hidden');
                 }
                 
                 // MJ用户也可以生成座位
@@ -536,11 +574,10 @@
         // 注册
         async function register() {
             const username = document.getElementById('regUsername').value;
-            const password = document.getElementById('regPassword').value;
             const avatar = document.getElementById('regAvatar').value;
             
-            if (!username || !password) {
-                alert('请输入用户名和密码');
+            if (!username) {
+                alert('请输入用户名');
                 return;
             }
             
@@ -554,7 +591,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password, avatar })
+                body: JSON.stringify({ username, avatar })
             });
             
             const data = await response.json();
@@ -697,7 +734,18 @@
             if (tabName === 'leaderboard') loadLeaderboard();
             if (tabName === 'trends') loadTrends();
             if (tabName === 'seats') refreshSeats();
+            if (tabName === 'tournament') loadTournamentData();
             if (tabName === 'admin') loadAdminUserList();
+        }
+
+        // Load current tournament blind data into edit fields
+        function loadTournamentData() {
+            if (tournamentData.blinds && tournamentData.blinds.length > tournamentState.currentLevel) {
+                const currentBlind = tournamentData.blinds[tournamentState.currentLevel];
+                document.getElementById('editCurrentSB').value = currentBlind.small_blind || 0;
+                document.getElementById('editCurrentBB').value = currentBlind.big_blind || 0;
+                document.getElementById('editCurrentAnte').value = currentBlind.ante || 0;
+            }
         }
 
         // 加载所有用户用于Points选择（仅用于选择目标，actor 始终为当前用户）
@@ -911,7 +959,7 @@
                 if (tfoot) {
                     const totalBuyin = tfoot.querySelector('#totalBuyin');
                     const totalCurrent = tfoot.querySelector('#totalCurrent');
-                    const totalWinLoss = tfoot.querySelector('#totalWinLoss');
+                    const totalWinLoss = tfoot.querySelector('#totalWinLossValue');
 
                     if (totalBuyin) totalBuyin.textContent = totals.brought.toFixed(2);
                     if (totalCurrent) totalCurrent.textContent = totals.current.toFixed(2);
@@ -1019,7 +1067,7 @@
                         <div>
                             <label class="block text-sm muted mb-1">Buy In / Cash Out</label>
                             <div class="flex gap-2">
-                                <input type="number" id="adminBuyIn_${user.username}" step="0.01" placeholder="Amount" class="flex-1 px-3 py-2 border rounded text-black">
+                                <input type="number" id="adminBuyIn_${user.username}" step="0.01" placeholder="Amount" class="flex-1 px-3 py-2 border rounded">
                                 <button onclick="adminPerformAction('${user.username}', 'buy_in')" class="bg-green-500 text-white px-3 py-2 rounded text-sm">Buy In</button>
                                 <button onclick="adminPerformAction('${user.username}', 'cash_out')" class="bg-red-500 text-white px-3 py-2 rounded text-sm">Cash Out</button>
                             </div>
@@ -1027,7 +1075,7 @@
                         <div>
                             <label class="block text-sm muted mb-1">Set Current</label>
                             <div class="flex gap-2">
-                                <input type="number" id="adminSetCurrent_${user.username}" step="0.01" placeholder="Amount" class="flex-1 px-3 py-2 border rounded text-black">
+                                <input type="number" id="adminSetCurrent_${user.username}" step="0.01" placeholder="Amount" class="flex-1 px-3 py-2 border rounded">
                                 <button onclick="adminPerformAction('${user.username}', 'set_current')" class="bg-blue-500 text-white px-3 py-2 rounded text-sm">Set</button>
                             </div>
                         </div>
@@ -1123,7 +1171,9 @@
             const allTimestamps = new Set();
             Object.values(trends).forEach(arr => arr.forEach(r => allTimestamps.add(r.timestamp)));
             const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => new Date(a) - new Date(b));
-            const labels = sortedTimestamps.map(ts => new Date(ts).toLocaleString());
+            
+            // 使用索引作为x轴标签，而不是时间戳
+            const labels = sortedTimestamps.map((_, i) => String(i + 1));
 
             // 生成每个用户的数据集
             const userNames = Object.keys(trends);
@@ -1152,21 +1202,49 @@
                     backgroundColor: bg,
                     tension: 0.3,
                     spanGaps: true,
-                    pointRadius: 4,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
                     pointBackgroundColor: dataPoints.map(v => v == null ? 'transparent' : color),
-                    borderWidth: 2
+                    borderWidth: 2.5
                 };
             });
+
+            const container = document.getElementById('trendsChart').parentElement;
+            const chartHeight = Math.max(300, Math.min(600, 100 + userNames.length * 40));
+            container.style.height = chartHeight + 'px';
 
             trendsChart = new Chart(ctx, {
                 type: 'line',
                 data: { labels: labels, datasets: datasets },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: true, labels: { color: '#cbd5e1' } } },
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { 
+                            display: true, 
+                            labels: { color: '#cbd5e1', font: { size: 12, weight: '600' }, padding: 12 },
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#cbd5e1',
+                            borderColor: 'rgba(59,130,246,0.5)',
+                            borderWidth: 1,
+                            padding: 10,
+                            displayColors: true
+                        }
+                    },
                     scales: {
-                        x: { ticks: { color: '#cbd5e1' } },
-                        y: { ticks: { color: '#cbd5e1' }, beginAtZero: true }
+                        x: { 
+                            ticks: { color: '#7c8894', font: { size: 11 } },
+                            grid: { color: 'rgba(59,130,246,0.05)', drawBorder: false }
+                        },
+                        y: { 
+                            ticks: { color: '#7c8894', font: { size: 11 } }, 
+                            beginAtZero: true,
+                            grid: { color: 'rgba(59,130,246,0.08)', drawBorder: false }
+                        }
                     },
                     interaction: { mode: 'index', intersect: false }
                 }
@@ -1502,150 +1580,246 @@
 
         // Tournament Display State
         let tournamentState = {
-            currentLevel: 0,
+            currentLevel: 1,
+            levelTime: 15,
+            currentSB: 1,
+            currentBB: 2,
+            currentAnte: 0,
+            nextSB: 2,
+            nextBB: 4,
+            nextAnte: 0,
             levelStartTime: null,
-            levelDuration: 0,
             countdownInterval: null,
-            isRunning: false
+            isRunning: false,
+            isPaused: false,
+            timeRemaining: 0
         };
 
-        // Update tournament display
-        function updateTournamentDisplay() {
-            if (tournamentData.blinds.length === 0) return;
+        let editMode = false;
 
-            const level = Math.max(0, Math.min(tournamentState.currentLevel, tournamentData.blinds.length - 1));
-            const currentBlind = tournamentData.blinds[level];
-            const nextBlind = level + 1 < tournamentData.blinds.length ? tournamentData.blinds[level + 1] : null;
+        // Toggle Tournament Edit Mode
+        function toggleTournamentEditMode() {
+            editMode = !editMode;
+            const displayMode = document.getElementById('tournamentDisplayMode');
+            const editModeDiv = document.getElementById('tournamentEditMode');
+            const editBtn = document.getElementById('tournamentEditBtn');
+            const displayBtns = document.getElementById('displayControlButtons');
+            const editBtns = document.getElementById('editControlButtons');
 
-            // Update current level
-            document.getElementById('currentLevel').textContent = level + 1;
-
-            // Update current blinds display (SB | BB (Ante))
-            document.getElementById('currentBlinds').textContent = 
-                `${currentBlind.small_blind} | ${currentBlind.big_blind} (${currentBlind.ante || 0})`;
-
-            // Update next blinds display
-            if (nextBlind) {
-                document.getElementById('nextBlinds').textContent = 
-                    `${nextBlind.small_blind} | ${nextBlind.big_blind} (${nextBlind.ante || 0})`;
+            if (editMode) {
+                // Enter edit mode
+                editModeDiv.classList.remove('hidden');
+                displayMode.classList.add('hidden');
+                displayBtns.classList.add('hidden');
+                editBtns.classList.remove('hidden');
+                editBtn.textContent = '✕ Cancel';
+                
+                // Load current values into edit form
+                document.getElementById('editLevel').value = tournamentState.currentLevel;
+                document.getElementById('editTime').value = tournamentState.levelTime;
+                document.getElementById('editCurrentSB').value = tournamentState.currentSB;
+                document.getElementById('editCurrentBB').value = tournamentState.currentBB;
+                document.getElementById('editCurrentAnte').value = tournamentState.currentAnte;
+                document.getElementById('editNextSB').value = tournamentState.nextSB;
+                document.getElementById('editNextBB').value = tournamentState.nextBB;
+                document.getElementById('editNextAnte').value = tournamentState.nextAnte;
             } else {
-                document.getElementById('nextBlinds').textContent = '-- Final Level --';
+                // Exit edit mode (cancel)
+                editModeDiv.classList.add('hidden');
+                displayMode.classList.remove('hidden');
+                displayBtns.classList.remove('hidden');
+                editBtns.classList.add('hidden');
+                editBtn.textContent = '✏️ Edit';
+                updateTournamentDisplay();
             }
         }
 
-        // Start blind level timer
-        function startBlindLevel() {
-            if (tournamentState.isRunning) {
-                alert('计时器已在运行');
+        // Save Tournament Changes
+        function saveTournamentChanges() {
+            const level = parseInt(document.getElementById('editLevel').value);
+            const time = parseInt(document.getElementById('editTime').value);
+            const currentSB = parseFloat(document.getElementById('editCurrentSB').value);
+            const currentBB = parseFloat(document.getElementById('editCurrentBB').value);
+            const currentAnte = parseFloat(document.getElementById('editCurrentAnte').value) || 0;
+            const nextSB = parseFloat(document.getElementById('editNextSB').value);
+            const nextBB = parseFloat(document.getElementById('editNextBB').value);
+            const nextAnte = parseFloat(document.getElementById('editNextAnte').value) || 0;
+
+            // Validation
+            if (isNaN(level) || level < 1) {
+                alert('Please enter valid level');
+                return;
+            }
+            if (isNaN(time) || time < 1) {
+                alert('Please enter valid time');
+                return;
+            }
+            if (isNaN(currentSB) || isNaN(currentBB) || currentSB < 0 || currentBB < 0) {
+                alert('Please enter valid current blinds');
+                return;
+            }
+            if (isNaN(nextSB) || isNaN(nextBB) || nextSB < 0 || nextBB < 0) {
+                alert('Please enter valid next blinds');
                 return;
             }
 
-            const durationStr = prompt('输入盲注级别时间 (分钟):', '15');
-            if (!durationStr || isNaN(durationStr) || parseInt(durationStr) < 1) {
-                alert('请输入有效的时间');
+            // Update state
+            tournamentState.currentLevel = level;
+            tournamentState.levelTime = time;
+            tournamentState.currentSB = currentSB;
+            tournamentState.currentBB = currentBB;
+            tournamentState.currentAnte = currentAnte;
+            tournamentState.nextSB = nextSB;
+            tournamentState.nextBB = nextBB;
+            tournamentState.nextAnte = nextAnte;
+            tournamentState.timeRemaining = time * 60;
+
+            // Exit edit mode
+            editMode = false;
+            const displayMode = document.getElementById('tournamentDisplayMode');
+            const editModeDiv = document.getElementById('tournamentEditMode');
+            const editBtn = document.getElementById('tournamentEditBtn');
+            const displayBtns = document.getElementById('displayControlButtons');
+            const editBtns = document.getElementById('editControlButtons');
+
+            editModeDiv.classList.add('hidden');
+            displayMode.classList.remove('hidden');
+            displayBtns.classList.remove('hidden');
+            editBtns.classList.add('hidden');
+            editBtn.textContent = '✏️ Edit';
+
+            updateTournamentDisplay();
+            addActivityLog(`Tournament settings saved: Level ${level}, ${time}min, ${currentSB}|${currentBB}(${currentAnte}) → ${nextSB}|${nextBB}(${nextAnte})`);
+        }
+
+        // Cancel Edit
+        function cancelTournamentEdit() {
+            toggleTournamentEditMode();
+        }
+
+        // Update Tournament Display
+        function updateTournamentDisplay() {
+            document.getElementById('displayLevel').textContent = tournamentState.currentLevel;
+            document.getElementById('displayTime').textContent = `${String(Math.floor(tournamentState.levelTime / 60)).padStart(2, '0')}:${String(tournamentState.levelTime % 60).padStart(2, '0')}`;
+            document.getElementById('displayCurrentBlinds').textContent = `${tournamentState.currentSB} | ${tournamentState.currentBB} (${tournamentState.currentAnte})`;
+            document.getElementById('displayNextBlinds').textContent = `${tournamentState.nextSB} | ${tournamentState.nextBB} (${tournamentState.nextAnte})`;
+            
+            // Initialize countdown if not already
+            if (tournamentState.timeRemaining === 0) {
+                tournamentState.timeRemaining = tournamentState.levelTime * 60;
+            }
+            
+            const mins = Math.floor(tournamentState.timeRemaining / 60);
+            const secs = tournamentState.timeRemaining % 60;
+            document.getElementById('levelCountdown').textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        // Start Tournament Timer
+        function startTournamentTimer() {
+            if (tournamentState.isRunning && !tournamentState.isPaused) {
+                alert('Timer already running');
                 return;
             }
 
-            const duration = parseInt(durationStr) * 60; // convert to seconds
-            tournamentState.levelDuration = duration;
-            tournamentState.levelStartTime = Date.now();
+            if (!tournamentState.isRunning) {
+                tournamentState.levelStartTime = Date.now();
+                tournamentState.timeRemaining = tournamentState.levelTime * 60;
+            } else if (tournamentState.isPaused) {
+                // Resume from pause
+                const now = Date.now();
+                const pausedDuration = now - tournamentState.levelStartTime;
+                tournamentState.levelStartTime = now - (tournamentState.levelTime * 60 - tournamentState.timeRemaining) * 1000;
+                tournamentState.isPaused = false;
+            }
+
             tournamentState.isRunning = true;
-
+            
             clearInterval(tournamentState.countdownInterval);
-            updateCountdown();
-            tournamentState.countdownInterval = setInterval(updateCountdown, 1000);
-            addActivityLog(`开始盲注级别 ${tournamentState.currentLevel + 1} (${durationStr} 分钟)`);
+            updateCountdownDisplay();
+            tournamentState.countdownInterval = setInterval(updateCountdownDisplay, 100);
+            
+            // Update button
+            const startBtn = event.target;
+            if (startBtn) {
+                startBtn.textContent = '⏸ Pause';
+                startBtn.onclick = pauseTournamentTimer;
+            }
+            
+            addActivityLog(`Timer started: Level ${tournamentState.currentLevel}, ${tournamentState.levelTime}min`);
         }
 
-        // Update countdown display
-        function updateCountdown() {
+        // Pause Tournament Timer
+        function pauseTournamentTimer() {
+            if (!tournamentState.isRunning || tournamentState.isPaused) {
+                return;
+            }
+
+            tournamentState.isPaused = true;
+            clearInterval(tournamentState.countdownInterval);
+            
+            // Update button back to Start
+            const pauseBtn = event.target;
+            if (pauseBtn) {
+                pauseBtn.textContent = '▶ Start';
+                pauseBtn.onclick = startTournamentTimer;
+            }
+            
+            addActivityLog('Timer paused');
+        }
+
+        // Update Countdown Display
+        function updateCountdownDisplay() {
             if (!tournamentState.isRunning || !tournamentState.levelStartTime) return;
 
             const elapsed = Math.floor((Date.now() - tournamentState.levelStartTime) / 1000);
-            const remaining = Math.max(0, tournamentState.levelDuration - elapsed);
+            const remaining = Math.max(0, tournamentState.levelTime * 60 - elapsed);
+            
+            tournamentState.timeRemaining = remaining;
 
             const mins = Math.floor(remaining / 60);
             const secs = remaining % 60;
-            document.getElementById('levelCountdown').textContent = 
-                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            document.getElementById('levelCountdown').textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
             if (remaining === 0) {
                 clearInterval(tournamentState.countdownInterval);
                 tournamentState.isRunning = false;
-                addActivityLog('⏰ 盲注级别时间已到！');
-                alert('盲注级别时间已到！请进行下一盲注或继续。');
+                tournamentState.isPaused = false;
+                addActivityLog('⏰ Time\'s up! Time to advance blinds or reset.');
+                
+                // Reset button
+                const startBtn = document.querySelector('[onclick="startTournamentTimer()"]');
+                if (startBtn) {
+                    startBtn.textContent = '▶ Start';
+                    startBtn.onclick = startTournamentTimer;
+                }
             }
         }
 
-        // Move to next blind level
-        function nextBlindLevel() {
+        // Reset Tournament Timer
+        function resetTournamentTimer() {
             if (tournamentState.isRunning) {
                 clearInterval(tournamentState.countdownInterval);
                 tournamentState.isRunning = false;
+                tournamentState.isPaused = false;
             }
 
-            if (tournamentState.currentLevel + 1 < tournamentData.blinds.length) {
-                tournamentState.currentLevel++;
-                updateTournamentDisplay();
-                addActivityLog(`进入盲注级别 ${tournamentState.currentLevel + 1}`);
-            } else {
-                alert('已经是最后一个盲注级别');
+            tournamentState.levelStartTime = null;
+            tournamentState.timeRemaining = tournamentState.levelTime * 60;
+            updateTournamentDisplay();
+            
+            // Reset button
+            const startBtn = document.querySelector('[onclick="startTournamentTimer()"]');
+            if (startBtn) {
+                startBtn.textContent = '▶ Start';
+                startBtn.onclick = startTournamentTimer;
             }
+            
+            addActivityLog('Timer reset');
         }
 
-        // Reset tournament to level 1
-        function resetBlindLevel() {
-            if (confirm('确定要重置赛事到第一个盲注级别吗？')) {
-                if (tournamentState.isRunning) {
-                    clearInterval(tournamentState.countdownInterval);
-                    tournamentState.isRunning = false;
-                }
-                tournamentState.currentLevel = 0;
-                tournamentState.levelStartTime = null;
-                tournamentState.levelDuration = 0;
-                document.getElementById('levelCountdown').textContent = '00:00';
-                updateTournamentDisplay();
-                addActivityLog('赛事已重置到第一个盲注级别');
-            }
-        }
-
-        async function saveTournamentSettings() {
-            // Collect data from form inputs
-            const blindInputs = document.querySelectorAll('.blind-sb');
-            blindInputs.forEach((input, idx) => {
-                if (tournamentData.blinds[idx]) {
-                    tournamentData.blinds[idx].small_blind = parseFloat(input.value) || 0;
-                    const bbInputs = document.querySelectorAll('.blind-bb');
-                    tournamentData.blinds[idx].big_blind = parseFloat(bbInputs[idx].value) || 0;
-                    const anteInputs = document.querySelectorAll('.blind-ante');
-                    tournamentData.blinds[idx].ante = parseFloat(anteInputs[idx].value) || 0;
-                }
-            });
-
-            const payoutInputs = document.querySelectorAll('.payout-pct');
-            payoutInputs.forEach((input, idx) => {
-                if (tournamentData.payouts[idx]) {
-                    tournamentData.payouts[idx].percentage = parseFloat(input.value) || 0;
-                }
-            });
-
-            try {
-                const resp = await fetch('/api/tournament_settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(tournamentData)
-                });
-                const data = await resp.json();
-                if (data.success) {
-                    addActivityLog('赛事设置已保存');
-                    alert('赛事设置已保存');
-                } else {
-                    alert(data.message || '保存失败');
-                }
-            } catch (e) {
-                console.error('Error saving tournament settings:', e);
-                alert('无法保存赛事设置');
-            }
+        function loadTournamentData() {
+            // This is now handled by updateTournamentDisplay()
+            updateTournamentDisplay();
         }
 
         // 新建游戏会话

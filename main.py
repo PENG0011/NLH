@@ -27,7 +27,12 @@ EMOJI_AVATARS = [
     '🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🐤','🦆',
     '🦅','🦉','🦇','🐺','🦄','🐝','🐛','🦋','🐌','🐞',
     '🐢','🐍','🦖','🦕','🐙','🦑','🦐','🦞','🐬','🐳',
-    '🐋','🦈','🐠','🐟','🐊','🦣','🐘','🐐','🐏','🐑'
+    '🐋','🦈','🐠','🐟','🐊','🦣','🐘','🐐','🐏','🐑',
+    '🦒','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒',
+    '🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦉','🦅',
+    '🦆','🦢','🦜','🦚','🦃','🦚','🦜','🦢','🦆','🕊️',
+    '🐓','🐔','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺',
+    '🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟'
 ]
 
 # 数据库初始化
@@ -40,7 +45,6 @@ def init_db():
     CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
         avatar TEXT DEFAULT 'default_avatar.png',
         is_admin BOOLEAN DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -214,7 +218,6 @@ last_seats = []
 # Pydantic模型
 class UserCreate(BaseModel):
     username: str
-    password: str
     avatar: Optional[str] = "default_avatar.png"
 
 class ScoreUpdate(BaseModel):
@@ -385,8 +388,8 @@ async def register(user: UserCreate):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO users (id, username, password, avatar, is_admin) VALUES (?, ?, ?, ?, ?)",
-        (user_id, user.username, user.password, user.avatar, is_admin_flag)
+        "INSERT INTO users (id, username, avatar, is_admin) VALUES (?, ?, ?, ?)",
+        (user_id, user.username, user.avatar, is_admin_flag)
     )
     conn.commit()
     conn.close()
@@ -485,7 +488,11 @@ async def api_toggle_admin(request: Request):
 
 
 @app.post('/api/reactivate_user')
-async def api_reactivate_user(payload: dict):
+async def api_reactivate_user(request: Request):
+    try:
+        payload = await request.json()
+    except:
+        return JSONResponse({"success": False, "message": "invalid JSON"})
     admin_user = payload.get('admin_user')
     target = payload.get('username')
     if not admin_user or not target:
@@ -551,10 +558,10 @@ async def api_update_avatar(payload: dict):
     return JSONResponse({"success": True})
 
 @app.post("/login")
-async def login(username: str = Form(), password: str = Form()):
+async def login(username: str = Form()):
     user = get_user_by_username(username)
-    if not user or user["password"] != password:
-        return JSONResponse({"success": False, "message": "用户名或密码错误"})
+    if not user:
+        return JSONResponse({"success": False, "message": "用户不存在"})
     
     token = str(uuid.uuid4())
     return JSONResponse({
@@ -929,8 +936,12 @@ async def api_new_session(payload: dict):
 
 
 @app.post('/api/delete_user')
-async def api_delete_user(payload: dict):
+async def api_delete_user(request: Request):
     """Admin endpoint: mark a user inactive so they no longer appear in leaderboard or seat draws."""
+    try:
+        payload = await request.json()
+    except:
+        return JSONResponse({"success": False, "message": "invalid JSON"})
     admin_user = payload.get('admin_user')
     target = payload.get('username')
     if not admin_user or not target:
@@ -1056,4 +1067,4 @@ async def websocket_endpoint(websocket: WebSocket, username: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main.py", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

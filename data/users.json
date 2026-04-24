@@ -1,16 +1,9 @@
 [
   {
     "username": "peng",
-    "avatar": "🦁",
+    "avatar": "🐧",
     "is_admin": true,
     "active": true,
-    "created_at": "2026-03-17 14:09:26"
-  },
-  {
-    "username": "mj",
-    "avatar": "🐭",
-    "is_admin": false,
-    "active": true,
-    "created_at": "2026-03-22 07:31:02"
+    "created_at": "2026-04-24 00:20:57"
   }
 ]
