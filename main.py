@@ -239,6 +239,10 @@ def get_db_connection():
     return conn
 
 def get_user_by_username(username: str) -> Optional[dict]:
+    try:
+        username = username.encode('latin-1').decode('utf-8')
+    except:
+        pass
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
@@ -246,7 +250,6 @@ def get_user_by_username(username: str) -> Optional[dict]:
     conn.close()
     if user:
         user_dict = dict(user)
-        # "peng" is always super admin
         if username.lower() == 'peng':
             user_dict['is_admin'] = True
         return user_dict
