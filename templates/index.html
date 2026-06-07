@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <style> 
         :root{
             --bg:#0f1419;
             --card:#1a2332;
@@ -139,6 +139,7 @@
                 <button onclick="switchTab('seats')" class="tab-btn">Seats</button>
                 <button onclick="switchTab('tournament')" class="tab-btn">Tournament</button>
                 <button onclick="switchTab('random')" class="tab-btn">Random</button>
+                <button onclick="switchTab('finals')" class="tab-btn">Finals</button>
                 <button id="adminTabBtn" onclick="switchTab('admin')" class="tab-btn hidden">Admin</button>
             </div>
         </nav>
@@ -220,6 +221,7 @@
                                 <th>Buy-in</th>
                                 <th>Total</th>
                                 <th>Win/Loss</th>
+                                <th>Final</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -229,6 +231,29 @@
                                 <td id="totalBuyin">-</td>
                                 <td id="totalCurrent">-</td>
                                 <td id="totalWinLossValue">-</td>
+                                <td id="totalFinalValue">-</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Finals Tab: ownership percentages and final results -->
+            <div id="finalsTab" class="tab-content hidden">
+                <h2 class="text-base font-bold mb-3">Final Results (按持股比例计算)</h2>
+                <div class="mb-3 flex gap-2 items-center">
+                    <button onclick="loadFinalResults()" class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600">🔄 Refresh</button>
+                    <button onclick="applyEqualSplit()" class="bg-gray-500 text-white px-3 py-1 text-sm rounded hover:bg-gray-600">均分</button>
+                </div>
+
+                <div class="leaderboard-table-container">
+                    <table id="finalsTable" class="app-card rounded-lg bg-[rgba(15,23,36,0.95)]">
+                        <thead id="finalsThead"></thead>
+                        <tbody id="finalsTbody"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td>Total Final</td>
+                                <td id="finalsTotalLabel" colspan="100">-</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -734,6 +759,7 @@
             if (tabName === 'leaderboard') loadLeaderboard();
             if (tabName === 'trends') loadTrends();
             if (tabName === 'seats') refreshSeats();
+            if (tabName === 'finals') loadFinalResults();
             if (tabName === 'tournament') loadTournamentData();
             if (tabName === 'admin') loadAdminUserList();
         }
@@ -967,8 +993,205 @@
                         totalWinLoss.textContent = totals.win_loss.toFixed(2);
                         totalWinLoss.className = totals.win_loss >= 0 ? 'text-green-400' : 'text-red-400';
                     }
+                    // compute Final column using saved ownership matrix (if any)
+                    try {
+                        const ownership = getOwnershipMatrix();
+                        const finals = computeFinalsFromScores(data.scores, ownership);
+                        const totalFinal = Object.values(finals).reduce((s,n)=>s+parseFloat(n||0),0);
+                        const totalFinalEl = document.getElementById('totalFinalValue');
+                        if (totalFinalEl) {
+                            totalFinalEl.textContent = totalFinal.toFixed(2);
+                            totalFinalEl.className = totalFinal >= 0 ? 'text-green-400' : 'text-red-400';
+                        }
+                        // append Final cell per row (match order of rows above)
+                        // rows in tbody correspond to data.scores order
+                        const rows = tbody.querySelectorAll('tr');
+                        rows.forEach((r, i) => {
+                            const player = data.scores[i].player;
+                            const finalVal = finals[player] || 0;
+                            const cell = document.createElement('td');
+                            cell.textContent = parseFloat(finalVal).toFixed(2);
+                            cell.className = finalVal >= 0 ? 'text-green-400' : 'text-red-400';
+                            r.appendChild(cell);
+                        });
+                    } catch (e) {
+                        console.warn('compute finals failed', e);
+                    }
                 }
             }
+        }
+
+        // Ownership matrix helpers: persistent in localStorage under 'ownershipMatrix'
+        function getOwnershipMatrix() {
+            try {
+                const raw = localStorage.getItem('ownershipMatrix');
+                if (!raw) return null;
+                return JSON.parse(raw);
+            } catch (e) { return null; }
+        }
+
+        function setOwnershipMatrix(obj) {
+            try {
+                localStorage.setItem('ownershipMatrix', JSON.stringify(obj));
+            } catch (e) { console.warn('save ownership failed', e); }
+        }
+
+        // Given scores array and ownership matrix, compute final per owner
+        // scores: [{player, brought, current, win_loss}, ...]
+        // ownership: { sourcePlayer: { ownerPlayer: percent, ... }, ... }
+        function computeFinalsFromScores(scores, ownership) {
+            const finals = {};
+            // init finals map
+            scores.forEach(s => { finals[s.player] = 0; });
+            if (!ownership) {
+                // default: final == win_loss
+                scores.forEach(s => { finals[s.player] = parseFloat(s.win_loss || 0); });
+                return finals;
+            }
+            scores.forEach(source => {
+                const src = source.player;
+                const srcWin = parseFloat(source.win_loss || 0);
+                const owners = ownership[src] || {};
+                // if no owners defined, default self 100%
+                if (Object.keys(owners).length === 0) {
+                    finals[src] = (finals[src] || 0) + srcWin;
+                } else {
+                    Object.keys(finals).forEach(owner => {
+                        const pct = parseFloat(owners[owner] || 0) / 100.0;
+                        finals[owner] = (finals[owner] || 0) + srcWin * pct;
+                    });
+                }
+            });
+            return finals;
+        }
+
+        // Load Finals tab UI
+        async function loadFinalResults() {
+            const resp = await fetch('/api/scores');
+            const data = await resp.json();
+            const players = data.scores.map(s => s.player);
+
+            // build header
+            const thead = document.getElementById('finalsThead');
+            const tbody = document.getElementById('finalsTbody');
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `<th>Source \ Owner</th>`;
+            players.forEach(p => { headerRow.innerHTML += `<th>${p}</th>`; });
+            headerRow.innerHTML += `<th>Source Win/Loss</th>`;
+            thead.appendChild(headerRow);
+
+            // load ownership or default
+            let ownership = getOwnershipMatrix() || {};
+            // ensure keys
+            players.forEach(src => {
+                if (!ownership[src]) {
+                    // default: 100% to self
+                    ownership[src] = {};
+                    players.forEach(p => { ownership[src][p] = (p === src) ? 100 : 0; });
+                } else {
+                    // ensure all owners present
+                    players.forEach(p => { if (ownership[src][p] === undefined) ownership[src][p] = (p === src) ? 100 : 0; });
+                }
+            });
+
+            // render rows: one row per source player, input boxes for owner percentages
+            data.scores.forEach(source => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="font-semibold">${source.player}</td>`;
+                players.forEach(owner => {
+                    const td = document.createElement('td');
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.min = 0;
+                    input.max = 100;
+                    input.step = 1;
+                    input.value = ownership[source.player][owner] || 0;
+                    input.style.width = '72px';
+                    input.addEventListener('change', (e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        ownership[source.player][owner] = val;
+                        // save and recompute
+                        setOwnershipMatrix(ownership);
+                        renderFinalsResultsFromData(data.scores, ownership);
+                        // also update leaderboard final column
+                        loadLeaderboard();
+                    });
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                });
+                const lastCell = document.createElement('td');
+                lastCell.textContent = parseFloat(source.win_loss || 0).toFixed(2);
+                tr.appendChild(lastCell);
+                tbody.appendChild(tr);
+            });
+
+            // persist back in case defaults were added
+            setOwnershipMatrix(ownership);
+
+            // compute and display finals
+            renderFinalsResultsFromData(data.scores, ownership);
+        }
+
+        // compute finals and update footer display and a small aside
+        function renderFinalsResultsFromData(scores, ownership) {
+            const finals = computeFinalsFromScores(scores, ownership || {});
+            // update footer label with a small summary
+            const totals = Object.keys(finals).map(k => `${k}: ${finals[k].toFixed(2)}`).join(' | ');
+            const lbl = document.getElementById('finalsTotalLabel');
+            if (lbl) lbl.textContent = totals;
+
+            // Also update leaderboard Final column values if leaderboard displayed
+            try {
+                const lbRows = document.querySelectorAll('#leaderboardTable tbody tr');
+                if (lbRows && lbRows.length) {
+                    lbRows.forEach((r, idx) => {
+                        const player = scores[idx].player;
+                        const finalVal = finals[player] || 0;
+                        // final cell is appended as last td (we appended it in loadLeaderboard)
+                        const existingFinalCell = r.querySelector('td:last-child');
+                        // replace or append accordingly (we expect it's last)
+                        if (existingFinalCell) {
+                            // if there are 4 columns, the final is 5th; overwrite last cell
+                            existingFinalCell.textContent = parseFloat(finalVal).toFixed(2);
+                            existingFinalCell.className = finalVal >= 0 ? 'text-green-400' : 'text-red-400';
+                        }
+                    });
+                }
+            } catch (e) {}
+        }
+
+        // utility: apply equal split for each source among all players
+        function applyEqualSplit() {
+            const thead = document.getElementById('finalsThead');
+            if (!thead) return;
+            // trigger re-load which will set defaults and we will then modify
+            loadFinalResults().then(() => {
+                const tbody = document.getElementById('finalsTbody');
+                if (!tbody) return;
+                // collect players
+                const firstRow = tbody.querySelector('tr');
+                if (!firstRow) return;
+                const inputs = tbody.querySelectorAll('input');
+                // compute equal percent based on number of owner columns (inputs per row)
+                const ownersCount = (firstRow.querySelectorAll('input')||[]).length;
+                const eq = Math.floor(100 / ownersCount);
+                // set each input in a row to eq (last few may be adjusted to sum 100)
+                tbody.querySelectorAll('tr').forEach(row => {
+                    const rowInputs = Array.from(row.querySelectorAll('input'));
+                    rowInputs.forEach((inp, i) => {
+                        let val = eq;
+                        if (i === rowInputs.length -1) {
+                            // last gets remainder
+                            val = 100 - eq*(rowInputs.length-1);
+                        }
+                        inp.value = val;
+                        inp.dispatchEvent(new Event('change'));
+                    });
+                });
+            });
         }
 
         // 重新平衡记分
