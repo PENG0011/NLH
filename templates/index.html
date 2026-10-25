@@ -53,11 +53,26 @@
         #leaderboardTable tfoot td{font-weight:700;border-top:2px solid rgba(59,130,246,0.2);color:var(--text-primary)}
         #leaderboardTable td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         #leaderboardTable td:first-child{white-space:normal}
+        .leaderboard-decimal{font-size:30%;font-weight:600;vertical-align:baseline}
         @media (max-width: 720px){
             #leaderboardTable th,#leaderboardTable td{padding:0.5rem 0.2rem;font-size:0.85rem}
         }
 
         .table-ellipse{background:linear-gradient(180deg,#0f2c1f,#0a1f15);border:2px solid rgba(59,130,246,0.2);border-radius:9999px}
+
+        .mobile-shell{max-width:420px;margin:0 auto}
+        .glass-panel{background:linear-gradient(135deg, rgba(15,23,36,0.96), rgba(30,41,59,0.88));border:1px solid rgba(148,163,184,0.18);box-shadow:0 18px 50px rgba(15,23,42,0.35)}
+        .metric-card{backdrop-filter:blur(8px);background:linear-gradient(135deg, rgba(59,130,246,0.16), rgba(15,23,42,0.2));border:1px solid rgba(148,163,184,0.08)}
+        .segmented{display:inline-flex;background:rgba(15,23,42,0.8);padding:4px;border-radius:999px;border:1px solid rgba(148,163,184,0.15)}
+        .segmented button{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;color:var(--muted);transition:all .2s}
+        .segmented button.active{background:linear-gradient(135deg,#3b82f6,#60a5fa);color:white;box-shadow:0 8px 18px rgba(59,130,246,0.32)}
+        @media (max-width: 720px){
+            .container{padding:12px 10px 24px}
+            .app-card{border-radius:16px}
+            .tab-btn{padding:8px 10px;font-size:11px}
+            #leaderboardTable th,#leaderboardTable td{padding:0.5rem 0.2rem;font-size:0.82rem}
+            .mobile-shell{max-width:100%}
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -132,14 +147,10 @@
         <!-- Pill Tab导航 -->
         <nav class="mb-6">
             <div class="flex flex-wrap gap-2">
-                <button onclick="switchTab('status')" class="tab-btn active">Status</button>
+                <button onclick="switchTab('status')" class="tab-btn">Status</button>
                 <button onclick="switchTab('points')" class="tab-btn">Points</button>
-                <button onclick="switchTab('leaderboard')" class="tab-btn">Leaderboard</button>
-                <button onclick="switchTab('trends')" class="tab-btn">Trends</button>
+                <button onclick="switchTab('leaderboard')" class="tab-btn active">Leaderboard</button>
                 <button onclick="switchTab('seats')" class="tab-btn">Seats</button>
-                <button onclick="switchTab('tournament')" class="tab-btn">Tournament</button>
-                <button onclick="switchTab('random')" class="tab-btn">Random</button>
-                <button onclick="switchTab('finals')" class="tab-btn">Finals</button>
                 <button id="adminTabBtn" onclick="switchTab('admin')" class="tab-btn hidden">Admin</button>
             </div>
         </nav>
@@ -147,11 +158,18 @@
         <!-- Tab内容 -->
         <div class="app-card rounded-lg p-6 min-h-[500px]">
             <!-- Status Tab -->
-            <div id="statusTab" class="tab-content">
+            <div id="statusTab" class="tab-content hidden">
                 <h2 class="text-base font-bold mb-3">在线用户</h2>
                 <div id="onlineUsers" class="grid grid-cols-4 gap-3"></div>
                 <h3 class="text-sm font-bold mt-4 mb-2">用户行为日志</h3>
                 <div id="activityLog" class="border rounded p-2 h-48 overflow-y-auto text-xs"></div>
+                <div class="mt-4 mobile-shell">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-bold">Buy-in Log</h3>
+                        <span class="text-[10px] muted">筹码比例: <span id="statusChipRatioLabel">1</span></span>
+                    </div>
+                    <div id="buyinLogList" class="space-y-2 max-h-80 overflow-y-auto pr-1"></div>
+                </div>
             </div>
 
             <!-- Points Tab -->
@@ -164,8 +182,12 @@
 
                     <div class="mb-3">
                         <label class="block muted mb-1 text-xs">Buy In / Cash Out</label>
-                        <div class="flex gap-2">
-                            <input type="number" id="pointsAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-sm">
+                        <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                            <input type="text" inputmode="decimal" id="pointsAmount" placeholder="金额" class="px-2 py-1 border rounded w-full sm:w-32 text-sm">
+                            <div class="segmented">
+                                <button type="button" class="active" data-mode="amount">金额</button>
+                                <button type="button" data-mode="chips">筹码</button>
+                            </div>
                             <button onclick="performPointsAction('buy_in')" class="bg-green-500 text-white px-3 py-1 text-sm rounded">Buy In</button>
                             <button onclick="performPointsAction('cash_out')" class="bg-red-500 text-white px-3 py-1 text-sm rounded">Cash Out</button>
                         </div>
@@ -173,16 +195,20 @@
 
                     <div class="mb-3">
                         <label class="block muted mb-1 text-xs">Set Current</label>
-                        <div class="flex gap-2">
-                            <input type="number" id="setCurrentAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-sm">
+                        <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                            <input type="text" inputmode="decimal" id="setCurrentAmount" placeholder="金额" class="px-2 py-1 border rounded w-full sm:w-32 text-sm">
+                            <div class="segmented">
+                                <button type="button" class="active" data-mode="set-current-amount">金额</button>
+                                <button type="button" data-mode="set-current-chips">筹码</button>
+                            </div>
                             <button onclick="performPointsAction('set_current', true)" class="bg-blue-500 text-white px-3 py-1 text-sm rounded">Set Current</button>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="block muted mb-1 text-xs">Win / Loss</label>
-                        <div class="flex gap-2 mb-2">
-                            <input type="number" id="wlAmount" step="0.01" placeholder="金额" class="px-2 py-1 border rounded w-32 text-sm">
+                        <div class="flex flex-col sm:flex-row gap-2 mb-2 sm:items-center">
+                            <input type="text" inputmode="decimal" id="wlAmount" placeholder="金额" class="px-2 py-1 border rounded w-full sm:w-32 text-sm">
                             <div id="targetUserButtons" class="flex flex-wrap gap-2"></div>
                         </div>
                         <div class="flex gap-2">
@@ -202,15 +228,21 @@
             </div>
 
             <!-- Leaderboard Tab -->
-            <div id="leaderboardTab" class="tab-content hidden">
+            <div id="leaderboardTab" class="tab-content">
                 <h2 class="text-base font-bold mb-3">排行榜</h2>
-                <div class="mb-3 flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                    <div class="flex gap-2">
+                <div class="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div class="flex flex-wrap gap-2">
                         <button onclick="loadLeaderboard()" class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600">🔄 Refresh</button>
                         <button onclick="rebalanceScores()" class="bg-green-500 text-white px-3 py-1 text-sm rounded hover:bg-green-600">重新平衡</button>
                         <button onclick="revertRebalance()" class="bg-red-500 text-white px-3 py-1 text-sm rounded hover:bg-red-600">撤销平衡</button>
                     </div>
-                    <span id="totalWinLoss" class="mt-2 sm:mt-0 font-bold text-sm"></span>
+                    <div class="flex items-center gap-2">
+                        <span id="totalWinLoss" class="font-bold text-sm"></span>
+                        <div class="segmented ml-2" id="leaderboardDisplayMode">
+                            <button type="button" class="active" data-display="amount">金额</button>
+                            <button type="button" data-display="chips">筹码</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="leaderboard-table-container">
@@ -413,16 +445,24 @@
             <!-- Admin Tab -->
             <div id="adminTab" class="tab-content hidden">
                 <h2 class="text-lg font-bold mb-3">管理员面板</h2>
-                
-                <!-- User Management Section -->
-                <div class="mb-4">
-                    <h3 class="font-bold mb-2 text-sm">用户管理</h3>
-                    <div id="adminUserList" class="space-y-2">
-                        <!-- User management will be populated here -->
+                <div class="mb-4 p-3 glass-panel rounded-lg">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <div class="text-xs muted mb-1">筹码比例</div>
+                            <div class="font-bold text-lg" id="adminChipRatioValue">1</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="chipRatioInput" min="1" step="1" value="1" class="w-28 px-2 py-2 border rounded text-sm">
+                            <button onclick="updateChipRatio()" class="bg-blue-500 text-white px-3 py-2 rounded text-sm">保存</button>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Admin Functions Section -->
+
+                <div class="mb-4">
+                    <h3 class="font-bold mb-2 text-sm">用户管理</h3>
+                    <div id="adminUserList" class="space-y-2"></div>
+                </div>
+
                 <div class="mb-4 p-3 bg-[rgba(255,255,255,0.04)] rounded">
                     <h3 class="font-bold mb-2 text-sm">系统操作</h3>
                     <div class="flex flex-wrap gap-2">
@@ -444,129 +484,454 @@
         // stack of snapshots before each rebalance; pop to undo latest
         let rebalanceStack = [];
 
-        // 页面加载
-        document.addEventListener('DOMContentLoaded', () => {
-            // Check for stored user session
-            const storedUser = localStorage.getItem('currentUser');
-            if (storedUser) {
-                try {
-                    currentUser = JSON.parse(storedUser);
-                    // Restore the session
-                    document.getElementById('authModal').classList.add('hidden');
-                    document.getElementById('mainApp').classList.remove('hidden');
-                    document.getElementById('currentUser').textContent = `当前用户: ${currentUser.username}`;
-                    // show avatar and change button
-                    const av = document.getElementById('currentAvatar');
-                    if (currentUser.avatar && currentUser.avatar.indexOf('.') > -1) {
-                        av.innerHTML = `<img src="/static/${currentUser.avatar}" class="w-8 h-8 rounded-full object-cover"/>`;
-                    } else {
-                        av.textContent = currentUser.avatar || '';
-                    }
-                    document.getElementById('changeAvatarBtn').classList.remove('hidden');
-                    
-                    // Show admin tab for peng
-                    if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
-                        document.getElementById('adminTabBtn').classList.remove('hidden');
-                    }
-                    
-                    // 初始化WebSocket
-                    initWebSocket();
-                    
-                    // 加载所有数据
-                    loadAllData();
-                    
-                    // 显示管理员控件
-                    if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
-                        document.getElementById('generateSeatsBtn').classList.remove('hidden');
-                        document.getElementById('adminTabBtn').classList.remove('hidden');
-                    }
-                    
-                    // MJ用户也可以生成座位
-                    if (currentUser.username.toLowerCase() === 'mj') {
-                        document.getElementById('generateSeatsBtn').classList.remove('hidden');
-                    }
-                    return; // Skip showing auth modal
-                } catch (e) {
-                    // Invalid stored data, clear it
-                    localStorage.removeItem('currentUser');
-                }
+        let selectedTargetUser = null;
+        let currentChipRatio = 1;
+        let leaderboardDisplayMode = 'amount';
+        let currentBuyinMode = 'amount';
+        let currentSetCurrentMode = 'amount';
+
+        function formatNumber(value) {
+            const num = Number(value || 0);
+            if (!Number.isFinite(num)) return '0.00';
+            return new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        }
+
+        function formatDisplayValue(value, mode = leaderboardDisplayMode) {
+            const num = Number(value || 0);
+            if (!Number.isFinite(num)) return '0.00';
+            if (mode === 'chips') {
+                return formatNumber(num * currentChipRatio);
             }
-            
-            // 默认显示登录模态框
-            toggleAuthModal('login');
-            
-            // 监听操作类型变化（有防御性检查，避免元素不存在时报错）
-            const pointsActionEl = document.getElementById('pointsAction');
-            if (pointsActionEl) {
-                pointsActionEl.addEventListener('change', () => {
-                    const action = pointsActionEl.value;
-                    const targetContainer = document.getElementById('targetUserContainer');
-                    if (targetContainer) {
-                        if (action === 'win' || action === 'loss') {
-                            targetContainer.classList.remove('hidden');
-                        } else {
-                            targetContainer.classList.add('hidden');
-                        }
+            return formatNumber(num);
+        }
+
+        function setLeaderboardNumber(element, value) {
+            const formatted = formatDisplayValue(value);
+            const decimalIndex = formatted.lastIndexOf('.');
+            element.replaceChildren(document.createTextNode(formatted.slice(0, decimalIndex)));
+            const decimal = document.createElement('span');
+            decimal.className = 'leaderboard-decimal';
+            decimal.textContent = formatted.slice(decimalIndex);
+            element.appendChild(decimal);
+        }
+
+        function getModeValue(rawValue, mode) {
+            const num = Number(rawValue || 0);
+            if (!Number.isFinite(num)) return 0;
+            return mode === 'chips' ? (num / currentChipRatio) : num;
+        }
+
+        function syncSegmentedButtons(container, activeKey) {
+            if (!container) return;
+            const buttons = container.querySelectorAll('button[data-mode]');
+            buttons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === activeKey);
+            });
+        }
+
+        function syncLeaderboardModeButtons() {
+            const container = document.getElementById('leaderboardDisplayMode');
+            if (!container) return;
+            const active = leaderboardDisplayMode === 'chips' ? 'chips' : 'amount';
+            container.querySelectorAll('button[data-display]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.display === active);
+            });
+        }
+
+        function bindModeButtons() {
+            document.querySelectorAll('.segmented button[data-mode]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const mode = btn.dataset.mode;
+                    if (mode === 'amount' || mode === 'chips') {
+                        currentBuyinMode = mode;
+                        setPointsModePlaceholders();
+                        syncSegmentedButtons(btn.closest('.segmented'), mode);
+                        return;
+                    }
+                    if (mode === 'set-current-amount' || mode === 'set-current-chips') {
+                        currentSetCurrentMode = mode.endsWith('chips') ? 'chips' : 'amount';
+                        setPointsModePlaceholders();
+                        syncSegmentedButtons(btn.closest('.segmented'), mode);
                     }
                 });
+            });
+
+            document.querySelectorAll('#leaderboardDisplayMode button[data-display]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    leaderboardDisplayMode = btn.dataset.display === 'chips' ? 'chips' : 'amount';
+                    syncLeaderboardModeButtons();
+                    loadLeaderboard();
+                });
+            });
+        }
+
+        function setPointsModePlaceholders() {
+            const pointsInput = document.getElementById('pointsAmount');
+            const setInput = document.getElementById('setCurrentAmount');
+            if (pointsInput) pointsInput.placeholder = currentBuyinMode === 'chips' ? '筹码' : '金额';
+            if (setInput) setInput.placeholder = currentSetCurrentMode === 'chips' ? '筹码' : '金额';
+            formatNumericInput(pointsInput, currentBuyinMode === 'amount');
+            formatNumericInput(setInput, currentSetCurrentMode === 'amount');
+        }
+
+        function parseNumericInput(input) {
+            const value = String(input?.value || '').replace(/,/g, '').trim();
+            return value === '' ? NaN : Number(value);
+        }
+
+        function formatNumericInput(input, enabled = true) {
+            if (!input) return;
+            const oldValue = input.value;
+            const caret = input.selectionStart ?? oldValue.length;
+            const digitsBeforeCaret = (oldValue.slice(0, caret).match(/[0-9]/g) || []).length;
+            let normalized = oldValue.replace(/,/g, '').replace(/[^0-9.]/g, '');
+            const decimalIndex = normalized.indexOf('.');
+            if (decimalIndex !== -1) {
+                normalized = normalized.slice(0, decimalIndex + 1) + normalized.slice(decimalIndex + 1).replace(/\./g, '');
             }
+            if (enabled && normalized) {
+                const parts = normalized.split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                normalized = parts.join('.');
+            }
+            input.value = normalized;
+            let newCaret = 0;
+            let digitsSeen = 0;
+            while (newCaret < normalized.length && digitsSeen < digitsBeforeCaret) {
+                if (/\d/.test(normalized[newCaret])) digitsSeen++;
+                newCaret++;
+            }
+            if (digitsSeen === digitsBeforeCaret) {
+                while (newCaret < normalized.length && normalized[newCaret] === ',') newCaret++;
+            }
+            input.setSelectionRange(newCaret, newCaret);
+        }
 
-            // ensure manage users button has a listener (defensive)
-            const manageBtn = document.getElementById('manageUsersBtn');
-            if (manageBtn) manageBtn.addEventListener('click', (e) => { try { openManageUsers(); } catch (err) { console.error('openManageUsers error', err); } });
-        });
+        function bindNumericInputFormatting() {
+            const points = document.getElementById('pointsAmount');
+            const setCurrent = document.getElementById('setCurrentAmount');
+            const winLoss = document.getElementById('wlAmount');
+            points?.addEventListener('input', () => formatNumericInput(points, currentBuyinMode === 'amount'));
+            setCurrent?.addEventListener('input', () => formatNumericInput(setCurrent, currentSetCurrentMode === 'amount'));
+            winLoss?.addEventListener('input', () => formatNumericInput(winLoss, true));
+        }
 
-        // 切换认证表单
-        function toggleAuthModal(type) {
+        function addActivityLog(message) {
+            const log = document.getElementById('activityLog');
+            if (!log) return;
+            const row = document.createElement('div');
+            row.className = 'mb-1';
+            row.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(row);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function loadBuyinLogs() {
+            const list = document.getElementById('buyinLogList');
+            if (!list) return;
+            try {
+                const response = await fetch('/api/buyin_logs');
+                const data = await response.json();
+                list.innerHTML = '';
+                if (!(data.logs || []).length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'muted text-xs py-3 text-center';
+                    empty.textContent = '暂无 Buy-in 记录';
+                    list.appendChild(empty);
+                    return;
+                }
+                data.logs.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'glass-panel rounded-lg px-3 py-2 flex items-center justify-between gap-3 text-xs';
+                    const details = document.createElement('div');
+                    details.className = 'min-w-0';
+                    const who = document.createElement('div');
+                    who.className = 'font-semibold truncate';
+                    who.textContent = item.username;
+                    const when = document.createElement('div');
+                    when.className = 'muted mt-1';
+                    when.textContent = item.created_at || '';
+                    details.append(who, when);
+                    const values = document.createElement('div');
+                    values.className = 'text-right shrink-0';
+                    const cash = document.createElement('div');
+                    cash.className = 'font-bold';
+                    cash.textContent = `¥${formatNumber(item.amount)}`;
+                    const chips = document.createElement('div');
+                    chips.className = 'muted mt-1';
+                    chips.textContent = `${formatNumber(item.chips)} 筹码 · 比例 ${formatNumber(item.ratio)}`;
+                    values.append(cash, chips);
+                    row.append(details, values);
+                    list.appendChild(row);
+                });
+            } catch (error) {
+                console.error('加载 Buy-in 日志失败', error);
+            }
+        }
+
+        async function loadChipRatio() {
+            try {
+                const response = await fetch('/api/settings');
+                const data = await response.json();
+                currentChipRatio = Number(data.chip_ratio) > 0 ? Number(data.chip_ratio) : 1;
+                const status = document.getElementById('statusChipRatioLabel');
+                const adminValue = document.getElementById('adminChipRatioValue');
+                const input = document.getElementById('chipRatioInput');
+                if (status) status.textContent = formatNumber(currentChipRatio);
+                if (adminValue) adminValue.textContent = formatNumber(currentChipRatio);
+                if (input) input.value = String(currentChipRatio);
+                loadLeaderboard();
+            } catch (error) {
+                console.error('读取筹码比例失败', error);
+            }
+        }
+
+        async function updateChipRatio() {
+            if (!currentUser) return;
+            const ratio = Number(document.getElementById('chipRatioInput').value);
+            if (!Number.isFinite(ratio) || ratio <= 0) {
+                alert('筹码比例必须大于 0');
+                return;
+            }
+            const response = await fetch('/api/settings', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_user: currentUser.username, chip_ratio: ratio })
+            });
+            const data = await response.json();
+            if (!data.success) { alert(data.message || '保存失败'); return; }
+            currentChipRatio = ratio;
+            document.getElementById('adminChipRatioValue').textContent = formatNumber(ratio);
+            document.getElementById('statusChipRatioLabel').textContent = formatNumber(ratio);
+            loadLeaderboard();
+            addActivityLog(`筹码比例已更新为 ${formatNumber(ratio)}`);
+        }
+
+        async function loadOnlineUsers() {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                const container = document.getElementById('onlineUsers');
+                if (!container) return;
+                container.innerHTML = '';
+                (data.users || []).forEach(user => {
+                    const card = document.createElement('div');
+                    card.className = 'online-card glass-panel rounded-xl p-3 text-center';
+                    const avatar = document.createElement('div');
+                    avatar.className = 'text-3xl mb-1';
+                    avatar.textContent = user.avatar && !user.avatar.includes('.') ? user.avatar : '🙂';
+                    const name = document.createElement('div');
+                    name.className = 'text-xs truncate';
+                    name.textContent = user.username;
+                    card.append(avatar, name);
+                    container.appendChild(card);
+                });
+            } catch (error) { console.error('加载用户失败', error); }
+        }
+
+        async function loadUsersForPoints() {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                const actor = document.getElementById('pointsUserButtons');
+                const targets = document.getElementById('targetUserButtons');
+                actor.innerHTML = '';
+                targets.innerHTML = '';
+                const badge = document.createElement('span');
+                badge.className = 'px-3 py-2 rounded-lg glass-panel';
+                badge.textContent = currentUser ? currentUser.username : '未登录';
+                actor.appendChild(badge);
+                (data.users || []).filter(user => user.username !== (currentUser && currentUser.username)).forEach(user => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'px-3 py-2 rounded-lg glass-panel text-xs';
+                    button.textContent = user.username;
+                    button.onclick = () => {
+                        selectedTargetUser = user.username;
+                        targets.querySelectorAll('button').forEach(el => el.classList.remove('active'));
+                        button.classList.add('active');
+                    };
+                    targets.appendChild(button);
+                });
+            } catch (error) { console.error('加载记分用户失败', error); }
+        }
+
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('/api/scores');
+                const data = await response.json();
+                const body = document.querySelector('#leaderboardTable tbody');
+                if (!body) return;
+                body.innerHTML = '';
+                const sums = { brought: 0, current: 0, win_loss: 0 };
+                (data.scores || []).forEach(score => {
+                    sums.brought += Number(score.brought || 0);
+                    sums.current += Number(score.current || 0);
+                    sums.win_loss += Number(score.win_loss || 0);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td></td><td></td><td></td><td></td><td></td>`;
+                    row.cells[0].textContent = score.player;
+                    setLeaderboardNumber(row.cells[1], score.brought);
+                    setLeaderboardNumber(row.cells[2], score.current);
+                    setLeaderboardNumber(row.cells[3], score.win_loss);
+                    row.cells[3].className = Number(score.win_loss) >= 0 ? 'text-green-400' : 'text-red-400';
+                    setLeaderboardNumber(row.cells[4], score.win_loss);
+                    row.cells[4].className = row.cells[3].className;
+                    body.appendChild(row);
+                });
+                setLeaderboardNumber(document.getElementById('totalBuyin'), sums.brought);
+                setLeaderboardNumber(document.getElementById('totalCurrent'), sums.current);
+                setLeaderboardNumber(document.getElementById('totalWinLossValue'), sums.win_loss);
+                setLeaderboardNumber(document.getElementById('totalFinalValue'), sums.win_loss);
+                const label = document.getElementById('totalWinLoss');
+                if (label) {
+                    label.replaceChildren(document.createTextNode('总赢亏：'));
+                    const number = document.createElement('span');
+                    setLeaderboardNumber(number, data.total_win_loss || 0);
+                    label.append(number, document.createTextNode(leaderboardDisplayMode === 'chips' ? ' 筹码' : ' 金额'));
+                }
+            } catch (error) { console.error('加载排行榜失败', error); }
+        }
+
+        async function performPointsAction(action, isSetCurrent = false) {
+            if (!currentUser) { alert('请先登录'); return; }
+            const input = (action === 'set_current' || isSetCurrent) ? document.getElementById('setCurrentAmount') : document.getElementById('pointsAmount');
+            const amount = parseNumericInput(input);
+            const mode = (action === 'set_current' || isSetCurrent) ? currentSetCurrentMode : currentBuyinMode;
+            if (!Number.isFinite(amount) || amount < 0) { alert('请输入有效金额'); return; }
+            const response = await fetch('/api/update_score', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: currentUser.username, action, amount, mode })
+            });
+            const data = await response.json();
+            if (!data.success) { alert(data.message || '操作失败'); return; }
+            input.value = '';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            addActivityLog(`${currentUser.username} ${action} ${formatNumber(amount)} ${mode === 'chips' ? '筹码' : '金额'}`);
+            loadLeaderboard();
+            loadBuyinLogs();
+        }
+
+        async function performWinLoss(action) {
+            if (!currentUser || !selectedTargetUser) { alert('请选择目标用户'); return; }
+            const amount = parseNumericInput(document.getElementById('wlAmount'));
+            if (!Number.isFinite(amount) || amount <= 0) { alert('请输入有效金额'); return; }
+            const response = await fetch('/api/update_score', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: currentUser.username, action, amount, target_user: selectedTargetUser })
+            });
+            const data = await response.json();
+            if (!data.success) { alert(data.message || '操作失败'); return; }
+            document.getElementById('wlAmount').value = '';
+            loadLeaderboard();
+        }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('nav .tab-btn').forEach(button => button.classList.remove('active'));
+            const target = document.getElementById(`${name}Tab`);
+            if (target) target.classList.remove('hidden');
+            const activeButton = Array.from(document.querySelectorAll('nav .tab-btn')).find(button => button.getAttribute('onclick') === `switchTab('${name}')`);
+            if (activeButton) activeButton.classList.add('active');
+            if (name === 'status') { loadOnlineUsers(); loadBuyinLogs(); }
+            if (name === 'points') loadUsersForPoints();
+            if (name === 'leaderboard') loadLeaderboard();
+            if (name === 'admin') loadChipRatio();
+        }
+
+        function loadAllData() {
+            loadOnlineUsers();
+            loadUsersForPoints();
+            loadLeaderboard();
+            loadBuyinLogs();
+            loadChipRatio();
+        }
+
+        function initWebSocket() {
+            if (!currentUser || !window.WebSocket) return;
+            if (websocket) websocket.close();
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            websocket = new WebSocket(`${protocol}//${window.location.host}/ws/${encodeURIComponent(currentUser.username)}`);
+            websocket.onmessage = event => {
+                try {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'score_update') { loadLeaderboard(); loadBuyinLogs(); }
+                    if (message.type === 'settings_changed') {
+                        currentChipRatio = Number(message.chip_ratio) || 1;
+                        loadChipRatio();
+                    }
+                    if (message.type === 'user_status') loadOnlineUsers();
+                } catch (error) { console.error('处理实时更新失败', error); }
+            };
+        }
+
+        function hydrateCurrentUserFromStorage() {
+            try {
+                const storedUser = localStorage.getItem('currentUser');
+                if (!storedUser) return false;
+                currentUser = JSON.parse(storedUser);
+                if (!currentUser || !currentUser.username) {
+                    localStorage.removeItem('currentUser');
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                localStorage.removeItem('currentUser');
+                return false;
+            }
+        }
+
+        function refreshAllData() {
+            loadOnlineUsers();
+            loadUsersForPoints();
+            loadLeaderboard();
+            loadTrends();
+            refreshSeats();
+            loadBuyinLogs();
+            loadChipRatio();
+            setPointsModePlaceholders();
+            addActivityLog('已刷新所有数据');
+        }
+
+        function toggleAuthModal(mode) {
             const loginForm = document.getElementById('loginForm');
             const registerForm = document.getElementById('registerForm');
             const authTitle = document.getElementById('authTitle');
-            
-            if (type === 'login') {
-                loginForm.classList.remove('hidden');
-                registerForm.classList.add('hidden');
-                authTitle.textContent = '登录';
-                // Clear register form
-                document.getElementById('regUsername').value = '';
-                document.getElementById('regAvatar').value = 'default_avatar.png';
-                document.getElementById('avatarPicker').querySelectorAll('button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
-            } else {
-                loginForm.classList.add('hidden');
-                registerForm.classList.remove('hidden');
-                authTitle.textContent = '注册';
-                // Clear login form
-                document.getElementById('loginUsername').value = '';
-                // 加载头像选择器（emoji 列表）
+            const isRegister = mode === 'register';
+
+            if (loginForm) loginForm.classList.toggle('hidden', isRegister);
+            if (registerForm) registerForm.classList.toggle('hidden', !isRegister);
+            if (authTitle) authTitle.textContent = isRegister ? '注册' : '登录';
+
+            if (isRegister) {
                 loadAvatarPicker();
             }
         }
 
-        // 登录
         async function login() {
-            const username = document.getElementById('loginUsername').value;
-            
+            const username = document.getElementById('loginUsername').value.trim();
             if (!username) {
                 alert('请输入用户名');
                 return;
             }
-            
-            const response = await fetch('/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `username=${username}`
-            });
-            
-            const data = await response.json();
-            if (data.success) {
-                currentUser = data.user;
-                // Store user session in localStorage
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                document.getElementById('authModal').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `username=${encodeURIComponent(username)}`
+                });
+                const data = await response.json();
+                if (data.success) {
+                    currentUser = data.user;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+                    document.getElementById('authModal').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
                     document.getElementById('currentUser').textContent = `当前用户: ${currentUser.username}`;
-                    // show avatar and change button
+
                     const av = document.getElementById('currentAvatar');
                     if (currentUser.avatar && currentUser.avatar.indexOf('.') > -1) {
                         av.innerHTML = `<img src="/static/${currentUser.avatar}" class="w-8 h-8 rounded-full object-cover"/>`;
@@ -574,61 +939,58 @@
                         av.textContent = currentUser.avatar || '';
                     }
                     document.getElementById('changeAvatarBtn').classList.remove('hidden');
-                
-                // 初始化WebSocket
-                initWebSocket();
-                
-                // 加载所有数据
-                loadAllData();
-                
-                // 显示管理员控件
-                if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
-                    document.getElementById('adminTabBtn').classList.remove('hidden');
-                    document.getElementById('generateSeatsBtn').classList.remove('hidden');
+
+                    if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
+                        document.getElementById('adminTabBtn').classList.remove('hidden');
+                        document.getElementById('generateSeatsBtn').classList.remove('hidden');
+                    }
+                    if (currentUser.username.toLowerCase() === 'mj') {
+                        document.getElementById('generateSeatsBtn').classList.remove('hidden');
+                    }
+
+                    initWebSocket();
+                    loadAllData();
+                } else {
+                    alert(data.message || '登录失败');
                 }
-                
-                // MJ用户也可以生成座位
-                if (currentUser.username.toLowerCase() === 'mj') {
-                    document.getElementById('generateSeatsBtn').classList.remove('hidden');
-                }
-            } else {
-                alert(data.message);
+            } catch (error) {
+                console.error('login failed', error);
+                alert('登录失败，请稍后重试');
             }
         }
 
-        // 注册
         async function register() {
-            const username = document.getElementById('regUsername').value;
+            const username = document.getElementById('regUsername').value.trim();
             const avatar = document.getElementById('regAvatar').value;
-            
+
             if (!username) {
                 alert('请输入用户名');
                 return;
             }
-            
             if (!avatar || avatar === 'default_avatar.png') {
                 alert('请选择一个头像');
                 return;
             }
-            
-            const response = await fetch('/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, avatar })
-            });
-            
-            const data = await response.json();
-            if (data.success) {
-                alert('注册成功，请登录');
-                toggleAuthModal('login');
-            } else {
-                alert(data.message);
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, avatar })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('注册成功，请登录');
+                    toggleAuthModal('login');
+                } else {
+                    alert(data.message || '注册失败');
+                }
+            } catch (error) {
+                console.error('register failed', error);
+                alert('注册失败，请稍后重试');
             }
         }
 
-        // 加载头像选择器数据并渲染
         async function loadAvatarPicker() {
             try {
                 const resp = await fetch('/api/avatars');
@@ -649,7 +1011,6 @@
                     btn.addEventListener('click', () => {
                         if (btn.disabled) return;
                         document.getElementById('regAvatar').value = emoji;
-                        // Highligh selected
                         picker.querySelectorAll('button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
                         btn.classList.add('ring', 'ring-2', 'ring-blue-400');
                     });
@@ -660,1692 +1021,50 @@
             }
         }
 
-        // 退出登录
         function logout() {
             if (websocket) {
                 websocket.close();
             }
             currentUser = null;
-            // Clear stored session
             localStorage.removeItem('currentUser');
             document.getElementById('mainApp').classList.add('hidden');
             document.getElementById('authModal').classList.remove('hidden');
             toggleAuthModal('login');
         }
 
-        // 初始化WebSocket
-        function initWebSocket() {
-            if (websocket) {
-                websocket.close();
-            }
-            
-            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            websocket = new WebSocket(`${wsProtocol}//${window.location.host}/ws/${currentUser.username}`);
-            
-            websocket.onopen = () => {
-                console.log('WebSocket连接成功');
-            };
-            
-            websocket.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                handleWebSocketMessage(data);
-            };
-            
-            websocket.onclose = () => {
-                console.log('WebSocket连接关闭');
-                // 自动重连
-                setTimeout(initWebSocket, 3000);
-            };
-            
-            websocket.onerror = (error) => {
-                console.error('WebSocket错误:', error);
-            };
-        }
-
-        // 处理WebSocket消息
-        function handleWebSocketMessage(data) {
-            switch (data.type) {
-                case 'user_status':
-                    // update online user list; fall back to reloading full list
-                    try { updateOnlineUsers(data.online_users); } catch (e) { loadOnlineUsers(); }
-                    addActivityLog(`${data.username} ${data.action === 'online' ? '上线' : '下线'}`);
-                    break;
-                case 'score_update':
-                    addActivityLog(`${data.username} 执行了${data.action}操作，金额: ${data.amount}`);
-                    loadLeaderboard();
-                    break;
-                case 'rebalance':
-                    addActivityLog(data.message);
-                    loadLeaderboard();
-                    break;
-                case 'seats_update':
-                    renderSeats(data.seats, data.mirror);
-                    break;
-                case 'coin_flip':
-                    showCoinFlipResult(data.result);
-                    break;
-                case 'user_message':
-                    addActivityLog(`${data.username}: ${data.message}`);
-                    break;
-            }
-        }
-
-        // Update online users from websocket payload (or fallback to reload)
-        function updateOnlineUsers(usernames) {
-            // if we have a list of usernames, reload the full user info
-            // because avatar data is provided by /api/users
-            loadOnlineUsers();
-        }
-
-        // 切换Tab
-        function switchTab(tabName) {
-            // 隐藏所有Tab
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.add('hidden');
-            });
-
-            // 更新tab按钮样式
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.textContent.trim().toLowerCase() === tabName.toLowerCase());
-            if (btn) btn.classList.add('active');
-
-            // 显示选中的Tab
-            const tab = document.getElementById(`${tabName}Tab`);
-            if (tab) tab.classList.remove('hidden');
-
-            // 加载Tab数据
-            if (tabName === 'status') loadOnlineUsers();
-            if (tabName === 'points') loadUsersForPoints();
-            if (tabName === 'leaderboard') loadLeaderboard();
-            if (tabName === 'trends') loadTrends();
-            if (tabName === 'seats') refreshSeats();
-            if (tabName === 'finals') loadFinalResults();
-            if (tabName === 'tournament') loadTournamentData();
-            if (tabName === 'admin') loadAdminUserList();
-        }
-
-        // Load current tournament blind data into edit fields
-        function loadTournamentData() {
-            if (tournamentData.blinds && tournamentData.blinds.length > tournamentState.currentLevel) {
-                const currentBlind = tournamentData.blinds[tournamentState.currentLevel];
-                document.getElementById('editCurrentSB').value = currentBlind.small_blind || 0;
-                document.getElementById('editCurrentBB').value = currentBlind.big_blind || 0;
-                document.getElementById('editCurrentAnte').value = currentBlind.ante || 0;
-            }
-        }
-
-        // 加载所有用户用于Points选择（仅用于选择目标，actor 始终为当前用户）
-        let selectedTargetUser = null;
-        function resetPointsInputs() {
-            document.getElementById('pointsAmount').value = '';
-            document.getElementById('setCurrentAmount').value = '';
-            document.getElementById('wlAmount').value = '';
-            selectedTargetUser = null;
-            document.querySelectorAll('#targetUserButtons button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
-        }
-
-        async function loadUsersForPoints() {
-            const response = await fetch('/api/users');
-            const data = await response.json();
-
-            const pointsContainer = document.getElementById('pointsUserButtons');
-            const targetContainer = document.getElementById('targetUserButtons');
-            pointsContainer.innerHTML = '';
-            targetContainer.innerHTML = '';
-
-            // actor is always current user
-            const actorDiv = document.createElement('div');
-            actorDiv.className = 'px-3 py-1 rounded bg-gray-800 text-white';
-            actorDiv.textContent = currentUser ? currentUser.username : '未登录';
-            pointsContainer.appendChild(actorDiv);
-
-            // populate targets for win/loss
-            data.users.forEach(user => {
-                if (currentUser && user.username === currentUser.username) return; // skip self for target list
-                const tbtn = document.createElement('button');
-                tbtn.type = 'button';
-                tbtn.className = 'px-2 py-1 rounded bg-gray-700 text-white';
-                tbtn.textContent = user.username;
-                tbtn.addEventListener('click', () => {
-                    selectedTargetUser = user.username;
-                    document.querySelectorAll('#targetUserButtons button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
-                    tbtn.classList.add('ring', 'ring-2', 'ring-blue-400');
-                });
-                targetContainer.appendChild(tbtn);
-            });
-
-            // reset inputs
-            resetPointsInputs();
-        }
-
-        // 更新在线用户列表
-        async function loadOnlineUsers() {
-            // 实际应用中应该从WebSocket获取，这里先从API获取所有用户
-            const response = await fetch('/api/users');
-            const data = await response.json();
-            
-            const onlineUsersContainer = document.getElementById('onlineUsers');
-            onlineUsersContainer.innerHTML = '';
-            
-            data.users.forEach(user => {
-                const userCard = document.createElement('div');
-                userCard.className = 'online-card app-card rounded-lg p-3 text-center';
-                const avatar = user.avatar || 'default_avatar.png';
-                // 如果 avatar 看起来像文件名则显示图片，否则显示 emoji
-                if (typeof avatar === 'string' && avatar.indexOf('.') > -1) {
-                    userCard.innerHTML = `
-                        <img src="/static/${avatar}" class="w-14 h-14 rounded-full mx-auto mb-2 object-cover" />
-                        <p class="text-sm">${user.username}</p>
-                    `;
-                } else {
-                    userCard.innerHTML = `
-                        <div class="w-14 h-14 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl">${avatar}</div>
-                        <p class="text-sm">${user.username}</p>
-                    `;
-                }
-                onlineUsersContainer.appendChild(userCard);
-            });
-        }
-
-        // 添加活动日志
-        function addActivityLog(message) {
-            const logContainer = document.getElementById('activityLog');
-            const logEntry = document.createElement('div');
-            logEntry.className = 'mb-1 text-sm';
-            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            logContainer.appendChild(logEntry);
-            // 滚动到底部
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }
-
-        // 更新记分
-        async function updateScore() {
-            const username = document.getElementById('pointsUser').value;
-            const action = document.getElementById('pointsAction').value;
-            const amount = parseFloat(document.getElementById('pointsAmount').value);
-            const targetUser = document.getElementById('targetUser').value;
-            
-            if (!amount || isNaN(amount)) {
-                alert('请输入有效的金额');
-                return;
-            }
-            
-            const response = await fetch('/api/update_score', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username,
-                    action,
-                    amount,
-                    target_user: (action === 'win' || action === 'loss') ? targetUser : null
-                })
-            });
-            
-            const data = await response.json();
-            if (data.success) {
-                addActivityLog(`成功更新${username}的记分: ${action} ${amount}`);
-                loadLeaderboard();
-            } else {
-                alert(data.message);
-            }
-        }
-
-        // Perform simple points actions (buy_in, cash_out, set_current) as current user
-        async function performPointsAction(action, isSetCurrent = false) {
-            if (!currentUser) { alert('请先登录'); return; }
-            const username = currentUser.username;
-            let amount = 0;
-            if (action === 'set_current' || isSetCurrent) {
-                amount = parseFloat(document.getElementById('setCurrentAmount').value);
-            } else {
-                amount = parseFloat(document.getElementById('pointsAmount').value);
-            }
-            if (isNaN(amount)) { alert('请输入有效金额'); return; }
-
-            const response = await fetch('/api/update_score', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, action, amount })
-            });
-            const data = await response.json();
-            if (data.success) {
-                addActivityLog(`成功更新${username}的记分: ${action} ${amount}`);
-                // clear the input that was used
-                try {
-                    if (action === 'set_current' || isSetCurrent) document.getElementById('setCurrentAmount').value = '';
-                    else document.getElementById('pointsAmount').value = '';
-                } catch (e) {}
-                loadLeaderboard();
-            } else {
-                alert(data.message || '操作失败');
-            }
-        }
-
-        // Perform win/loss with selected target user
-        async function performWinLoss(kind) {
-            if (!currentUser) { alert('请先登录'); return; }
-            if (!selectedTargetUser) { alert('请选择目标用户'); return; }
-            const amount = parseFloat(document.getElementById('wlAmount').value);
-            if (isNaN(amount)) { alert('请输入有效金额'); return; }
-            const response = await fetch('/api/update_score', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: currentUser.username, action: kind, amount, target_user: selectedTargetUser })
-            });
-            const data = await response.json();
-            if (data.success) {
-                addActivityLog(`成功记录${kind} ${amount} 对 ${selectedTargetUser}`);
-                // clear wl input
-                try { document.getElementById('wlAmount').value = ''; } catch (e) {}
-                loadLeaderboard();
-            } else {
-                alert(data.message || '操作失败');
-            }
-        }
-
-        // 加载排行榜（桌面表格 + 移动卡片）
-        async function loadLeaderboard() {
-            const response = await fetch('/api/scores');
-            const data = await response.json();
-
-            // 保存原始数据用于撤销平衡
-            if (originalScores.length === 0) {
-                originalScores = JSON.parse(JSON.stringify(data.scores));
-            }
-
-            // 更新总赢亏显示：正数表示需要让赢家少赢，负数表示可以让输家少输
-            const msg = data.total_win_loss < 0 ? `可以让输家少输 ${Math.abs(data.total_win_loss).toFixed(2)}` : `需要让赢家少赢 ${Math.abs(data.total_win_loss).toFixed(2)}`;
-            document.getElementById('totalWinLoss').textContent = `总赢亏: ${data.total_win_loss.toFixed(2)} (${msg})`;
-
-            const leaderboardTable = document.getElementById('leaderboardTable');
-            if (leaderboardTable) {
-                const tbody = leaderboardTable.querySelector('tbody');
-                const tfoot = leaderboardTable.querySelector('tfoot');
-                tbody.innerHTML = '';
-
-                let totals = { current: 0, brought: 0, win_loss: 0 };
-                data.scores.forEach((score, idx) => {
-                    totals.current += parseFloat(score.current || 0);
-                    totals.brought += parseFloat(score.brought || 0);
-                    totals.win_loss += parseFloat(score.win_loss || 0);
-
-                    const winLossClass = score.win_loss >= 0 ? 'text-green-400' : 'text-red-400';
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="font-semibold">${score.player}</td>
-                        <td>${score.brought.toFixed(2)}</td>
-                        <td>${score.current.toFixed(2)}</td>
-                        <td class="${winLossClass}">${score.win_loss.toFixed(2)}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-
-                if (tfoot) {
-                    const totalBuyin = tfoot.querySelector('#totalBuyin');
-                    const totalCurrent = tfoot.querySelector('#totalCurrent');
-                    const totalWinLoss = tfoot.querySelector('#totalWinLossValue');
-
-                    if (totalBuyin) totalBuyin.textContent = totals.brought.toFixed(2);
-                    if (totalCurrent) totalCurrent.textContent = totals.current.toFixed(2);
-                    if (totalWinLoss) {
-                        totalWinLoss.textContent = totals.win_loss.toFixed(2);
-                        totalWinLoss.className = totals.win_loss >= 0 ? 'text-green-400' : 'text-red-400';
-                    }
-                    // compute Final column using saved ownership matrix (if any)
-                    try {
-                        const ownership = getOwnershipMatrix();
-                        const finals = computeFinalsFromScores(data.scores, ownership);
-                        const totalFinal = Object.values(finals).reduce((s,n)=>s+parseFloat(n||0),0);
-                        const totalFinalEl = document.getElementById('totalFinalValue');
-                        if (totalFinalEl) {
-                            totalFinalEl.textContent = totalFinal.toFixed(2);
-                            totalFinalEl.className = totalFinal >= 0 ? 'text-green-400' : 'text-red-400';
-                        }
-                        // append Final cell per row (match order of rows above)
-                        // rows in tbody correspond to data.scores order
-                        const rows = tbody.querySelectorAll('tr');
-                        rows.forEach((r, i) => {
-                            const player = data.scores[i].player;
-                            const finalVal = finals[player] || 0;
-                            const cell = document.createElement('td');
-                            cell.textContent = parseFloat(finalVal).toFixed(2);
-                            cell.className = finalVal >= 0 ? 'text-green-400' : 'text-red-400';
-                            r.appendChild(cell);
-                        });
-                    } catch (e) {
-                        console.warn('compute finals failed', e);
-                    }
-                }
-            }
-        }
-
-        // Ownership matrix helpers: persistent in localStorage under 'ownershipMatrix'
-        function getOwnershipMatrix() {
-            try {
-                const raw = localStorage.getItem('ownershipMatrix');
-                if (!raw) return null;
-                return JSON.parse(raw);
-            } catch (e) { return null; }
-        }
-
-        function setOwnershipMatrix(obj) {
-            try {
-                localStorage.setItem('ownershipMatrix', JSON.stringify(obj));
-            } catch (e) { console.warn('save ownership failed', e); }
-        }
-
-        // Given scores array and ownership matrix, compute final per owner
-        // scores: [{player, brought, current, win_loss}, ...]
-        // ownership: { sourcePlayer: { ownerPlayer: percent, ... }, ... }
-        function computeFinalsFromScores(scores, ownership) {
-            const finals = {};
-            // init finals map
-            scores.forEach(s => { finals[s.player] = 0; });
-            if (!ownership) {
-                // default: final == win_loss
-                scores.forEach(s => { finals[s.player] = parseFloat(s.win_loss || 0); });
-                return finals;
-            }
-            scores.forEach(source => {
-                const src = source.player;
-                const srcWin = parseFloat(source.win_loss || 0);
-                const owners = ownership[src] || {};
-                // if no owners defined, default self 100%
-                if (Object.keys(owners).length === 0) {
-                    finals[src] = (finals[src] || 0) + srcWin;
-                } else {
-                    Object.keys(finals).forEach(owner => {
-                        const pct = parseFloat(owners[owner] || 0) / 100.0;
-                        finals[owner] = (finals[owner] || 0) + srcWin * pct;
-                    });
-                }
-            });
-            return finals;
-        }
-
-        // Load Finals tab UI
-        async function loadFinalResults() {
-            const resp = await fetch('/api/scores');
-            const data = await resp.json();
-            const players = data.scores.map(s => s.player);
-
-            // build header
-            const thead = document.getElementById('finalsThead');
-            const tbody = document.getElementById('finalsTbody');
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
-
-            const headerRow = document.createElement('tr');
-            headerRow.innerHTML = `<th>Source \ Owner</th>`;
-            players.forEach(p => { headerRow.innerHTML += `<th>${p}</th>`; });
-            headerRow.innerHTML += `<th>Source Win/Loss</th>`;
-            thead.appendChild(headerRow);
-
-            // load ownership or default
-            let ownership = getOwnershipMatrix() || {};
-            // ensure keys
-            players.forEach(src => {
-                if (!ownership[src]) {
-                    // default: 100% to self
-                    ownership[src] = {};
-                    players.forEach(p => { ownership[src][p] = (p === src) ? 100 : 0; });
-                } else {
-                    // ensure all owners present
-                    players.forEach(p => { if (ownership[src][p] === undefined) ownership[src][p] = (p === src) ? 100 : 0; });
-                }
-            });
-
-            // render rows: one row per source player, input boxes for owner percentages
-            data.scores.forEach(source => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td class="font-semibold">${source.player}</td>`;
-                players.forEach(owner => {
-                    const td = document.createElement('td');
-                    const input = document.createElement('input');
-                    input.type = 'number';
-                    input.min = 0;
-                    input.max = 100;
-                    input.step = 1;
-                    input.value = ownership[source.player][owner] || 0;
-                    input.style.width = '72px';
-                    input.addEventListener('change', (e) => {
-                        const val = parseFloat(e.target.value) || 0;
-                        ownership[source.player][owner] = val;
-                        // save and recompute
-                        setOwnershipMatrix(ownership);
-                        renderFinalsResultsFromData(data.scores, ownership);
-                        // also update leaderboard final column
-                        loadLeaderboard();
-                    });
-                    td.appendChild(input);
-                    tr.appendChild(td);
-                });
-                const lastCell = document.createElement('td');
-                lastCell.textContent = parseFloat(source.win_loss || 0).toFixed(2);
-                tr.appendChild(lastCell);
-                tbody.appendChild(tr);
-            });
-
-            // persist back in case defaults were added
-            setOwnershipMatrix(ownership);
-
-            // compute and display finals
-            renderFinalsResultsFromData(data.scores, ownership);
-        }
-
-        // compute finals and update footer display and a small aside
-        function renderFinalsResultsFromData(scores, ownership) {
-            const finals = computeFinalsFromScores(scores, ownership || {});
-            // update footer label with a small summary
-            const totals = Object.keys(finals).map(k => `${k}: ${finals[k].toFixed(2)}`).join(' | ');
-            const lbl = document.getElementById('finalsTotalLabel');
-            if (lbl) lbl.textContent = totals;
-
-            // Also update leaderboard Final column values if leaderboard displayed
-            try {
-                const lbRows = document.querySelectorAll('#leaderboardTable tbody tr');
-                if (lbRows && lbRows.length) {
-                    lbRows.forEach((r, idx) => {
-                        const player = scores[idx].player;
-                        const finalVal = finals[player] || 0;
-                        // final cell is appended as last td (we appended it in loadLeaderboard)
-                        const existingFinalCell = r.querySelector('td:last-child');
-                        // replace or append accordingly (we expect it's last)
-                        if (existingFinalCell) {
-                            // if there are 4 columns, the final is 5th; overwrite last cell
-                            existingFinalCell.textContent = parseFloat(finalVal).toFixed(2);
-                            existingFinalCell.className = finalVal >= 0 ? 'text-green-400' : 'text-red-400';
-                        }
-                    });
-                }
-            } catch (e) {}
-        }
-
-        // utility: apply equal split for each source among all players
-        function applyEqualSplit() {
-            const thead = document.getElementById('finalsThead');
-            if (!thead) return;
-            // trigger re-load which will set defaults and we will then modify
-            loadFinalResults().then(() => {
-                const tbody = document.getElementById('finalsTbody');
-                if (!tbody) return;
-                // collect players
-                const firstRow = tbody.querySelector('tr');
-                if (!firstRow) return;
-                const inputs = tbody.querySelectorAll('input');
-                // compute equal percent based on number of owner columns (inputs per row)
-                const ownersCount = (firstRow.querySelectorAll('input')||[]).length;
-                const eq = Math.floor(100 / ownersCount);
-                // set each input in a row to eq (last few may be adjusted to sum 100)
-                tbody.querySelectorAll('tr').forEach(row => {
-                    const rowInputs = Array.from(row.querySelectorAll('input'));
-                    rowInputs.forEach((inp, i) => {
-                        let val = eq;
-                        if (i === rowInputs.length -1) {
-                            // last gets remainder
-                            val = 100 - eq*(rowInputs.length-1);
-                        }
-                        inp.value = val;
-                        inp.dispatchEvent(new Event('change'));
-                    });
-                });
-            });
-        }
-
-        // 重新平衡记分
-        async function rebalanceScores() {
-            const count = prompt('请输入需要调整的玩家数量:', '1');
-            if (!count || isNaN(count) || count < 1) {
-                alert('请输入有效的数量');
-                return;
-            }
-            // snapshot current scores so we can undo this specific rebalance
-            try {
-                const snapResp = await fetch('/api/scores');
-                const snapData = await snapResp.json();
-                if (snapData && snapData.scores) {
-                    rebalanceStack.push(JSON.parse(JSON.stringify(snapData.scores)));
-                }
-            } catch (e) {
-                console.error('failed to snapshot scores before rebalance', e);
-            }
-
-            const response = await fetch('/api/rebalance', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ count: parseInt(count) })
-            });
-            
-            const data = await response.json();
-            if (data.success) {
-                alert(data.message);
-                loadLeaderboard();
-            } else {
-                alert(data.message);
-            }
-        }
-
-        // 撤销平衡
-        function revertRebalance() {
-            if (!rebalanceStack || rebalanceStack.length === 0) {
-                alert('没有可撤销的平衡操作');
-                return;
-            }
-            if (confirm('确定要撤销最近一次平衡操作吗？')) {
-                const lastSnapshot = rebalanceStack.pop();
-                // restore 'current' values from the snapshot
-                lastSnapshot.forEach(score => {
-                    try {
-                        updateScoreManually(score.player, 'set_current', score.current);
-                    } catch (e) {
-                        console.error('restore score failed', e);
-                    }
-                });
-                loadLeaderboard();
-                addActivityLog('已撤销最近一次平衡操作');
-            }
-        }
-
-        // 手动更新记分（用于撤销平衡）
-        async function updateScoreManually(username, action, amount) {
-            await fetch('/api/update_score', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username,
-                    action,
-                    amount
-                })
-            });
-        }
-
-        // 加载管理员用户列表
-        async function loadAdminUserList() {
-            const response = await fetch('/api/users_all');
-            const data = await response.json();
-            
-            const adminUserList = document.getElementById('adminUserList');
-            adminUserList.innerHTML = '';
-            
-            data.users.forEach(user => {
-                const userCard = document.createElement('div');
-                userCard.className = 'app-card p-4 rounded-lg';
-                userCard.innerHTML = `
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.04)] flex items-center justify-center text-lg">${user.avatar || user.username.charAt(0).toUpperCase()}</div>
-                            <div>
-                                <div class="font-semibold">${user.username}</div>
-                                <div class="text-sm muted">${user.active ? 'Active' : 'Inactive'}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div>
-                            <label class="block text-sm muted mb-1">Buy In / Cash Out</label>
-                            <div class="flex gap-2">
-                                <input type="number" id="adminBuyIn_${user.username}" step="0.01" placeholder="Amount" class="flex-1 px-3 py-2 border rounded">
-                                <button onclick="adminPerformAction('${user.username}', 'buy_in')" class="bg-green-500 text-white px-3 py-2 rounded text-sm">Buy In</button>
-                                <button onclick="adminPerformAction('${user.username}', 'cash_out')" class="bg-red-500 text-white px-3 py-2 rounded text-sm">Cash Out</button>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm muted mb-1">Set Current</label>
-                            <div class="flex gap-2">
-                                <input type="number" id="adminSetCurrent_${user.username}" step="0.01" placeholder="Amount" class="flex-1 px-3 py-2 border rounded">
-                                <button onclick="adminPerformAction('${user.username}', 'set_current')" class="bg-blue-500 text-white px-3 py-2 rounded text-sm">Set</button>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm muted mb-1">Actions</label>
-                            <div class="flex gap-2">
-                                ${user.active ? `<button onclick="toggleUserActive('${user.username}', false)" class="bg-yellow-500 text-white px-3 py-2 rounded text-sm">Deactivate</button>` : `<button onclick="toggleUserActive('${user.username}', true)" class="bg-green-500 text-white px-3 py-2 rounded text-sm">Activate</button>`}
-                                <button onclick="deleteUser('${user.username}')" class="bg-red-600 text-white px-3 py-2 rounded text-sm">Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                adminUserList.appendChild(userCard);
-            });
-        }
-
-        // 管理员执行用户操作
-        async function adminPerformAction(username, action) {
-            let amount = 0;
-            if (action === 'set_current') {
-                amount = parseFloat(document.getElementById(`adminSetCurrent_${username}`).value);
-            } else {
-                amount = parseFloat(document.getElementById(`adminBuyIn_${username}`).value);
-            }
-            if (isNaN(amount)) { alert('请输入有效金额'); return; }
-
-            const response = await fetch('/api/update_score', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, action, amount })
-            });
-            const data = await response.json();
-            if (data.success) {
-                addActivityLog(`管理员更新${username}的记分: ${action} ${amount}`);
-                // clear the input
-                if (action === 'set_current') {
-                    document.getElementById(`adminSetCurrent_${username}`).value = '';
-                } else {
-                    document.getElementById(`adminBuyIn_${username}`).value = '';
-                }
-                loadLeaderboard();
-                loadAdminUserList(); // refresh the list
-            } else {
-                alert(data.message || '操作失败');
-            }
-        }
-
-        // 切换用户激活状态
-        async function toggleUserActive(username, active) {
-            const endpoint = active ? '/api/reactivate_user' : '/api/delete_user';
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ admin_user: currentUser.username, username })
-            });
-            const data = await response.json();
-            if (data.success) {
-                addActivityLog(`${active ? '激活' : '停用'}用户: ${username}`);
-                loadAdminUserList();
-            } else {
-                alert(data.message || '操作失败');
-            }
-        }
-
-        // 删除用户
-        async function deleteUser(username) {
-            if (!confirm(`确定要删除用户 ${username} 吗？此操作不可撤销！`)) return;
-            
-            const response = await fetch('/api/delete_user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ admin_user: currentUser.username, username })
-            });
-            const data = await response.json();
-            if (data.success) {
-                addActivityLog(`删除用户: ${username}`);
-                loadAdminUserList();
-            } else {
-                alert(data.message || '操作失败');
-            }
-        }
-
-        // 加载趋势图 — 每个玩家一条折线，x轴为时间，y轴为金额（current）
-        async function loadTrends() {
-            const resp = await fetch('/api/trends');
-            const data = await resp.json();
-            const ctx = document.getElementById('trendsChart').getContext('2d');
-
-            if (trendsChart) trendsChart.destroy();
-
-            const trends = data.trends || {};
-
-            // 收集所有时间戳并排序
-            const allTimestamps = new Set();
-            Object.values(trends).forEach(arr => arr.forEach(r => allTimestamps.add(r.timestamp)));
-            const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => new Date(a) - new Date(b));
-            
-            // 使用索引作为x轴标签，而不是时间戳
-            const labels = sortedTimestamps.map((_, i) => String(i + 1));
-
-            // 生成每个用户的数据集
-            const userNames = Object.keys(trends);
-            const datasets = userNames.map((uname, i) => {
-                const map = {};
-                // use win_loss for trends
-                trends[uname].forEach(r => { map[r.timestamp] = r.win_loss; });
-                // forward-fill missing values (视为水平无变化)
-                const dataPoints = [];
-                let prev = null;
-                for (const ts of sortedTimestamps) {
-                    if (map[ts] !== undefined) {
-                        prev = map[ts];
-                        dataPoints.push(map[ts]);
-                    } else {
-                        dataPoints.push(prev !== null ? prev : 0);
-                    }
-                }
-                const hue = Math.round((i * 360) / Math.max(1, userNames.length));
-                const color = `hsl(${hue} 80% 60%)`;
-                const bg = `hsla(${hue}, 90%, 50%, 0.12)`;
-                return {
-                    label: uname,
-                    data: dataPoints,
-                    borderColor: color,
-                    backgroundColor: bg,
-                    tension: 0.3,
-                    spanGaps: true,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    pointBackgroundColor: dataPoints.map(v => v == null ? 'transparent' : color),
-                    borderWidth: 2.5
-                };
-            });
-
-            const container = document.getElementById('trendsChart').parentElement;
-            const chartHeight = Math.max(300, Math.min(600, 100 + userNames.length * 40));
-            container.style.height = chartHeight + 'px';
-
-            trendsChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels: labels, datasets: datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { 
-                            display: true, 
-                            labels: { color: '#cbd5e1', font: { size: 12, weight: '600' }, padding: 12 },
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleColor: '#fff',
-                            bodyColor: '#cbd5e1',
-                            borderColor: 'rgba(59,130,246,0.5)',
-                            borderWidth: 1,
-                            padding: 10,
-                            displayColors: true
-                        }
-                    },
-                    scales: {
-                        x: { 
-                            ticks: { color: '#7c8894', font: { size: 11 } },
-                            grid: { color: 'rgba(59,130,246,0.05)', drawBorder: false }
-                        },
-                        y: { 
-                            ticks: { color: '#7c8894', font: { size: 11 } }, 
-                            beginAtZero: true,
-                            grid: { color: 'rgba(59,130,246,0.08)', drawBorder: false }
-                        }
-                    },
-                    interaction: { mode: 'index', intersect: false }
-                }
-            });
-        }
-
-        // 生成座位
-        async function generateSeats() {
-            const response = await fetch('/api/generate_seats', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            const data = await response.json();
-            renderSeats(data.seats, data.mirror);
-            addActivityLog('已生成新的座位分配 (redraw)');
-        }
-
-        // 刷新座位 — 不改变顺序，只读取最新结果
-        async function refreshSeats() {
-            try {
-                const resp = await fetch('/api/seats');
-                const data = await resp.json();
-                if (data.seats && data.seats.length) {
-                    renderSeats(data.seats, data.mirror);
-                    addActivityLog('已刷新座位（不改变顺序）');
-                } else {
-                    addActivityLog('尚无座位分配，使用 redraw 生成');
-                }
-            } catch (e) {
-                console.error('刷新座位失败', e);
-            }
-        }
-
-        // 渲染座位 — 均匀分布在椭圆周上，显示头像与用户名
-        async function renderSeats(seats, mirrorFlag) {
-            const container = document.getElementById('seatsContainer');
-            container.innerHTML = '';
-
-            // 获取用户头像映射
-            const usersResp = await fetch('/api/users');
-            const usersData = await usersResp.json();
-            const avatarMap = {};
-            usersData.users.forEach(u => avatarMap[u.username] = u.avatar || 'default_avatar.png');
-
-                const rect = container.getBoundingClientRect();
-                const cx = rect.width / 2;
-                const cy = rect.height / 2;
-                const rx = rect.width * 0.42; // ellipse radii
-                const ry = rect.height * 0.42;
-
-            // place seats evenly around the ellipse and push them outside the table edge
-            const outwardBase = Math.max(rx, ry) * 0.28; // proportionally push seats outward
-            const mirror = !!mirrorFlag;
-            const tableEl = document.getElementById('tableEllipse');
-            if (tableEl) {
-                tableEl.style.transform = mirror ? 'rotate(180deg)' : 'none';
-            }
-
-            seats.forEach((seat, i) => {
-                const angle = (seat.angle !== undefined && seat.angle !== null) ? seat.angle : ((2 * Math.PI * i) / seats.length - Math.PI / 2); // prefer server-provided angle
-                // point on ellipse edge
-                const ex = cx + rx * Math.cos(angle);
-                const ey = cy + ry * Math.sin(angle);
-                // push outward along radial direction so people sit outside the table
-                const outward = outwardBase;
-                const ox = Math.cos(angle) * outward;
-                const oy = Math.sin(angle) * outward;
-                const x = ex + ox;
-                const y = ey + oy;
-
-                const seatElement = document.createElement('div');
-                // minimal container — no circular card background so table image stays visible
-                // responsive sizes: smaller on narrow screens
-                seatElement.className = 'absolute w-16 h-16 sm:w-20 sm:h-20 flex flex-col justify-center items-center text-xs text-center p-0';
-                seatElement.style.left = `${x}px`;
-                seatElement.style.top = `${y}px`;
-                // if the table is rotated, counter-rotate each seat so avatar/name remain upright
-                seatElement.style.transform = mirror ? 'translate(-50%, -50%) rotate(180deg)' : 'translate(-50%, -50%)';
-
-                // seat number badge
-                const badge = document.createElement('div');
-                badge.className = 'absolute -top-2 -right-2 text-[10px] px-1 py-0.5 rounded bg-[rgba(0,0,0,0.5)] text-white';
-                badge.textContent = `#${seat.seat}`;
-                seatElement.appendChild(badge);
-
-                const avatarVal = seat.username ? (avatarMap[seat.username] || 'default_avatar.png') : null;
-                if (avatarVal && typeof avatarVal === 'string' && avatarVal.indexOf('.') > -1) {
-                    const img = document.createElement('img');
-                    img.src = `/static/${avatarVal}`;
-                    img.className = 'w-10 h-10 rounded-full mb-1 object-cover';
-                    seatElement.appendChild(img);
-                    const name = document.createElement('div');
-                    name.className = 'truncate w-20 text-xs';
-                    name.textContent = seat.username;
-                    seatElement.appendChild(name);
-                } else if (avatarVal) {
-                    const emojiSpan = document.createElement('div');
-                    emojiSpan.className = 'mb-1 text-xl';
-                    emojiSpan.textContent = avatarVal;
-                    seatElement.appendChild(emojiSpan);
-                    const name = document.createElement('div');
-                    name.className = 'truncate w-20 text-xs';
-                    name.textContent = seat.username;
-                    seatElement.appendChild(name);
-                } else {
-                    // empty seat — show small seat number label only (no circular placeholder)
-                    const emptyLabel = document.createElement('div');
-                    emptyLabel.className = 'text-xs muted';
-                    emptyLabel.textContent = `Seat ${seat.seat}`;
-                    seatElement.appendChild(emptyLabel);
-                }
-                container.appendChild(seatElement);
-            });
-
-            // Redraw button visibility for peng/mj
-            const redraw = document.getElementById('redrawSeatsBtn');
-            if (currentUser && (currentUser.username.toLowerCase() === 'peng' || currentUser.username.toLowerCase() === 'mj')) {
-                redraw.classList.remove('hidden');
-            } else {
-                redraw.classList.add('hidden');
-            }
-        }
-
-        // 硬币翻转（有动画）
-        async function coinFlip() {
-            const percentage = parseFloat(document.getElementById('yesPercentage').value);
-
-            if (isNaN(percentage) || percentage < 0 || percentage > 100) {
-                alert('请输入0-100之间的有效百分比');
-                return;
-            }
-
-            const btn = document.getElementById('coinFlipBtn');
-            if (btn) { btn.disabled = true; btn.classList.add('opacity-60', 'cursor-not-allowed'); }
-
-            const resultContainer = document.getElementById('coinFlipResult');
-            resultContainer.innerHTML = '';
-
-            // 创建硬币DOM：两面
-            const coin = document.createElement('div');
-            coin.className = 'coin';
-            const inner = document.createElement('div');
-            inner.className = 'coin-inner';
-            const front = document.createElement('div');
-            front.className = 'coin-face coin-front';
-            front.textContent = 'CALL';
-            const back = document.createElement('div');
-            back.className = 'coin-face coin-back';
-            back.textContent = 'FOLD';
-            inner.appendChild(front);
-            inner.appendChild(back);
-            coin.appendChild(inner);
-            resultContainer.appendChild(coin);
-
-            // start server request but don't await yet
-            const respPromise = fetch('/api/coin_flip', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `percentage=${percentage}`
-            }).then(r => r.json()).catch(e => ({ success: false, result: 'no' }));
-
-            // animate 1 flip
-            const sleep = ms => new Promise(res => setTimeout(res, ms));
-            for (let k = 0; k < 1; k++) {
-                inner.style.transition = 'transform 450ms ease-in-out';
-                // rotate 720deg per iteration to get a clear flipping motion
-                inner.style.transform = `rotateY(${720 * (k + 1)}deg)`;
-                await sleep(500);
-            }
-
-            // await server result
-            const data = await respPromise;
-            const result = data && data.result ? data.result : 'no';
-
-            // finalize coin to show final face
-            inner.style.transition = 'transform 300ms ease-in-out';
-            inner.style.transform = result === 'yes' ? 'rotateY(0deg)' : 'rotateY(180deg)';
-
-            // re-enable button
-            if (btn) { btn.disabled = false; btn.classList.remove('opacity-60', 'cursor-not-allowed'); }
-
-            // log result (map to human-friendly labels)
-            const display = result === 'yes' ? 'Call' : 'Fold';
-            addActivityLog(`随机结果: ${display} (概率: ${document.getElementById('yesPercentage').value}%)`);
-        }
-
-        // 显示硬币翻转结果（让硬币停在相应一面，保留动画）
-        function showCoinFlipResult(result) {
-            const resultContainer = document.getElementById('coinFlipResult');
-            // If an animated coin already exists (created by coinFlip), finalize it
-            const existingCoin = resultContainer.querySelector('.coin');
-            if (existingCoin) {
-                const inner = existingCoin.querySelector('.coin-inner');
-                if (inner) {
-                    // stop the flip animation and set final face
-                    existingCoin.classList.remove('flipY');
-                    inner.style.transition = 'transform 300ms';
-                    if (result === 'yes') {
-                        inner.style.transform = 'rotateY(0deg)';
-                    } else {
-                        inner.style.transform = 'rotateY(180deg)';
-                    }
-                }
-            } else {
-                // no existing coin (e.g., if called directly) — render a static coin
-                resultContainer.innerHTML = '';
-                const coin = document.createElement('div');
-                coin.className = 'coin';
-                const inner = document.createElement('div');
-                inner.className = 'coin-inner';
-                const front = document.createElement('div');
-                front.className = 'coin-face coin-front';
-                front.textContent = 'CALL';
-                const back = document.createElement('div');
-                back.className = 'coin-face coin-back';
-                back.textContent = 'FOLD';
-                inner.appendChild(front);
-                inner.appendChild(back);
-                inner.style.transform = result === 'yes' ? 'rotateY(0deg)' : 'rotateY(180deg)';
-                coin.appendChild(inner);
-                resultContainer.appendChild(coin);
-            }
-
-            // log the result in activity log (no textual display in UI)
-            const display = result === 'yes' ? 'Call' : 'Fold';
-            addActivityLog(`随机结果: ${display} (概率: ${document.getElementById('yesPercentage').value}%)`);
-        }
-
-        // Tournament Management Functions
-        let tournamentData = {
-            blinds: [],
-            payouts: [],
-            prize_pot: 0
-        };
-
-        async function loadTournamentSettings() {
-            try {
-                const resp = await fetch('/api/tournament_settings');
-                if (resp.ok) {
-                    const data = await resp.json();
-                    if (data.success) {
-                        tournamentData = data.data || { blinds: [], payouts: [], prize_pot: 0 };
-                        renderBlindStructure();
-                        renderPayoutStructure();
-                        updatePrizePotDisplay();
-                        updateTournamentDisplay();
-                    }
-                }
-            } catch (e) {
-                console.error('Error loading tournament settings:', e);
-            }
-        }
-
-        function updatePrizePotDisplay() {
-            const display = document.getElementById('prizePotAmount');
-            if (display) {
-                display.textContent = (tournamentData.prize_pot || 0).toFixed(2);
-            }
-        }
-
-        function addBuyinToPot() {
-            const input = document.getElementById('buyinAmount');
-            const amount = parseFloat(input.value);
-            if (isNaN(amount) || amount <= 0) {
-                alert('请输入有效的买入金额');
-                return;
-            }
-            tournamentData.prize_pot = (tournamentData.prize_pot || 0) + amount;
-            updatePrizePotDisplay();
-            input.value = '';
-            addActivityLog(`添加买入: ${amount.toFixed(2)} 到奖池，当前奖池: ${(tournamentData.prize_pot).toFixed(2)}`);
-        }
-
-        function addBlindLevel() {
-            tournamentData.blinds.push({ level: tournamentData.blinds.length + 1, small_blind: 1, big_blind: 2, ante: 0 });
-            renderBlindStructure();
-        }
-
-        function removeBlindLevel(index) {
-            tournamentData.blinds.splice(index, 1);
-            renderBlindStructure();
-        }
-
-        function renderBlindStructure() {
-            const container = document.getElementById('blindStructure');
-            container.innerHTML = '';
-            tournamentData.blinds.forEach((blind, idx) => {
-                const div = document.createElement('div');
-                div.className = 'flex gap-1 items-center p-2 bg-[rgba(255,255,255,0.04)] rounded text-sm';
-                div.innerHTML = `
-                    <span class="w-14 text-xs font-semibold">L${blind.level}</span>
-                    <input type="number" value="${blind.small_blind}" placeholder="SB" min="0" step="0.5" class="blind-sb w-16 px-2 py-1 border rounded text-black text-xs">
-                    <span class="text-xs">/</span>
-                    <input type="number" value="${blind.big_blind}" placeholder="BB" min="0" step="0.5" class="blind-bb w-16 px-2 py-1 border rounded text-black text-xs">
-                    <span class="text-xs">A:</span>
-                    <input type="number" value="${blind.ante || 0}" placeholder="0" min="0" step="0.5" class="blind-ante w-14 px-2 py-1 border rounded text-black text-xs">
-                    <button onclick="removeBlindLevel(${idx})" class="ml-auto bg-red-500 text-white px-2 py-1 text-xs rounded hover:bg-red-600">-</button>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function addPayoutRank() {
-            const place = tournamentData.payouts.length + 1;
-            tournamentData.payouts.push({ place: place, percentage: 30 });
-            renderPayoutStructure();
-        }
-
-        function removePayoutRank(index) {
-            tournamentData.payouts.splice(index, 1);
-            renderPayoutStructure();
-        }
-
-        function renderPayoutStructure() {
-            const container = document.getElementById('payoutStructure');
-            container.innerHTML = '';
-            tournamentData.payouts.forEach((payout, idx) => {
-                const div = document.createElement('div');
-                div.className = 'flex gap-2 items-center p-2 bg-[rgba(255,255,255,0.04)] rounded text-sm';
-                const payoutAmount = tournamentData.prize_pot ? ((tournamentData.prize_pot * payout.percentage) / 100).toFixed(2) : '0.00';
-                div.innerHTML = `
-                    <span class="w-16 text-xs font-semibold">Place ${payout.place}</span>
-                    <input type="number" value="${payout.percentage}" placeholder="%" min="0" max="100" step="1" class="payout-pct w-16 px-2 py-1 border rounded text-black text-xs">
-                    <span class="text-xs text-gray-400">%</span>
-                    <span class="text-xs text-green-400 ml-auto min-w-16 text-right">${payoutAmount}</span>
-                    <button onclick="removePayoutRank(${idx})" class="bg-red-500 text-white px-2 py-1 text-xs rounded hover:bg-red-600">-</button>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        // Tournament Display State
-        let tournamentState = {
-            currentLevel: 1,
-            levelTime: 15,
-            currentSB: 1,
-            currentBB: 2,
-            currentAnte: 0,
-            nextSB: 2,
-            nextBB: 4,
-            nextAnte: 0,
-            levelStartTime: null,
-            countdownInterval: null,
-            isRunning: false,
-            isPaused: false,
-            timeRemaining: 0
-        };
-
-        let editMode = false;
-
-        // Toggle Tournament Edit Mode
-        function toggleTournamentEditMode() {
-            editMode = !editMode;
-            const displayMode = document.getElementById('tournamentDisplayMode');
-            const editModeDiv = document.getElementById('tournamentEditMode');
-            const editBtn = document.getElementById('tournamentEditBtn');
-            const displayBtns = document.getElementById('displayControlButtons');
-            const editBtns = document.getElementById('editControlButtons');
-
-            if (editMode) {
-                // Enter edit mode
-                editModeDiv.classList.remove('hidden');
-                displayMode.classList.add('hidden');
-                displayBtns.classList.add('hidden');
-                editBtns.classList.remove('hidden');
-                editBtn.textContent = '✕ Cancel';
-                
-                // Load current values into edit form
-                document.getElementById('editLevel').value = tournamentState.currentLevel;
-                document.getElementById('editTime').value = tournamentState.levelTime;
-                document.getElementById('editCurrentSB').value = tournamentState.currentSB;
-                document.getElementById('editCurrentBB').value = tournamentState.currentBB;
-                document.getElementById('editCurrentAnte').value = tournamentState.currentAnte;
-                document.getElementById('editNextSB').value = tournamentState.nextSB;
-                document.getElementById('editNextBB').value = tournamentState.nextBB;
-                document.getElementById('editNextAnte').value = tournamentState.nextAnte;
-            } else {
-                // Exit edit mode (cancel)
-                editModeDiv.classList.add('hidden');
-                displayMode.classList.remove('hidden');
-                displayBtns.classList.remove('hidden');
-                editBtns.classList.add('hidden');
-                editBtn.textContent = '✏️ Edit';
-                updateTournamentDisplay();
-            }
-        }
-
-        // Save Tournament Changes
-        function saveTournamentChanges() {
-            const level = parseInt(document.getElementById('editLevel').value);
-            const time = parseInt(document.getElementById('editTime').value);
-            const currentSB = parseFloat(document.getElementById('editCurrentSB').value);
-            const currentBB = parseFloat(document.getElementById('editCurrentBB').value);
-            const currentAnte = parseFloat(document.getElementById('editCurrentAnte').value) || 0;
-            const nextSB = parseFloat(document.getElementById('editNextSB').value);
-            const nextBB = parseFloat(document.getElementById('editNextBB').value);
-            const nextAnte = parseFloat(document.getElementById('editNextAnte').value) || 0;
-
-            // Validation
-            if (isNaN(level) || level < 1) {
-                alert('Please enter valid level');
-                return;
-            }
-            if (isNaN(time) || time < 1) {
-                alert('Please enter valid time');
-                return;
-            }
-            if (isNaN(currentSB) || isNaN(currentBB) || currentSB < 0 || currentBB < 0) {
-                alert('Please enter valid current blinds');
-                return;
-            }
-            if (isNaN(nextSB) || isNaN(nextBB) || nextSB < 0 || nextBB < 0) {
-                alert('Please enter valid next blinds');
-                return;
-            }
-
-            // Update state
-            tournamentState.currentLevel = level;
-            tournamentState.levelTime = time;
-            tournamentState.currentSB = currentSB;
-            tournamentState.currentBB = currentBB;
-            tournamentState.currentAnte = currentAnte;
-            tournamentState.nextSB = nextSB;
-            tournamentState.nextBB = nextBB;
-            tournamentState.nextAnte = nextAnte;
-            tournamentState.timeRemaining = time * 60;
-
-            // Exit edit mode
-            editMode = false;
-            const displayMode = document.getElementById('tournamentDisplayMode');
-            const editModeDiv = document.getElementById('tournamentEditMode');
-            const editBtn = document.getElementById('tournamentEditBtn');
-            const displayBtns = document.getElementById('displayControlButtons');
-            const editBtns = document.getElementById('editControlButtons');
-
-            editModeDiv.classList.add('hidden');
-            displayMode.classList.remove('hidden');
-            displayBtns.classList.remove('hidden');
-            editBtns.classList.add('hidden');
-            editBtn.textContent = '✏️ Edit';
-
-            updateTournamentDisplay();
-            addActivityLog(`Tournament settings saved: Level ${level}, ${time}min, ${currentSB}|${currentBB}(${currentAnte}) → ${nextSB}|${nextBB}(${nextAnte})`);
-        }
-
-        // Cancel Edit
-        function cancelTournamentEdit() {
-            toggleTournamentEditMode();
-        }
-
-        // Update Tournament Display
-        function updateTournamentDisplay() {
-            document.getElementById('displayLevel').textContent = tournamentState.currentLevel;
-            document.getElementById('displayTime').textContent = `${String(Math.floor(tournamentState.levelTime / 60)).padStart(2, '0')}:${String(tournamentState.levelTime % 60).padStart(2, '0')}`;
-            document.getElementById('displayCurrentBlinds').textContent = `${tournamentState.currentSB} | ${tournamentState.currentBB} (${tournamentState.currentAnte})`;
-            document.getElementById('displayNextBlinds').textContent = `${tournamentState.nextSB} | ${tournamentState.nextBB} (${tournamentState.nextAnte})`;
-            
-            // Initialize countdown if not already
-            if (tournamentState.timeRemaining === 0) {
-                tournamentState.timeRemaining = tournamentState.levelTime * 60;
-            }
-            
-            const mins = Math.floor(tournamentState.timeRemaining / 60);
-            const secs = tournamentState.timeRemaining % 60;
-            document.getElementById('levelCountdown').textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        }
-
-        // Start Tournament Timer
-        function startTournamentTimer() {
-            if (tournamentState.isRunning && !tournamentState.isPaused) {
-                alert('Timer already running');
-                return;
-            }
-
-            if (!tournamentState.isRunning) {
-                tournamentState.levelStartTime = Date.now();
-                tournamentState.timeRemaining = tournamentState.levelTime * 60;
-            } else if (tournamentState.isPaused) {
-                // Resume from pause
-                const now = Date.now();
-                const pausedDuration = now - tournamentState.levelStartTime;
-                tournamentState.levelStartTime = now - (tournamentState.levelTime * 60 - tournamentState.timeRemaining) * 1000;
-                tournamentState.isPaused = false;
-            }
-
-            tournamentState.isRunning = true;
-            
-            clearInterval(tournamentState.countdownInterval);
-            updateCountdownDisplay();
-            tournamentState.countdownInterval = setInterval(updateCountdownDisplay, 100);
-            
-            // Update button
-            const startBtn = event.target;
-            if (startBtn) {
-                startBtn.textContent = '⏸ Pause';
-                startBtn.onclick = pauseTournamentTimer;
-            }
-            
-            addActivityLog(`Timer started: Level ${tournamentState.currentLevel}, ${tournamentState.levelTime}min`);
-        }
-
-        // Pause Tournament Timer
-        function pauseTournamentTimer() {
-            if (!tournamentState.isRunning || tournamentState.isPaused) {
-                return;
-            }
-
-            tournamentState.isPaused = true;
-            clearInterval(tournamentState.countdownInterval);
-            
-            // Update button back to Start
-            const pauseBtn = event.target;
-            if (pauseBtn) {
-                pauseBtn.textContent = '▶ Start';
-                pauseBtn.onclick = startTournamentTimer;
-            }
-            
-            addActivityLog('Timer paused');
-        }
-
-        // Update Countdown Display
-        function updateCountdownDisplay() {
-            if (!tournamentState.isRunning || !tournamentState.levelStartTime) return;
-
-            const elapsed = Math.floor((Date.now() - tournamentState.levelStartTime) / 1000);
-            const remaining = Math.max(0, tournamentState.levelTime * 60 - elapsed);
-            
-            tournamentState.timeRemaining = remaining;
-
-            const mins = Math.floor(remaining / 60);
-            const secs = remaining % 60;
-            document.getElementById('levelCountdown').textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-
-            if (remaining === 0) {
-                clearInterval(tournamentState.countdownInterval);
-                tournamentState.isRunning = false;
-                tournamentState.isPaused = false;
-                addActivityLog('⏰ Time\'s up! Time to advance blinds or reset.');
-                
-                // Reset button
-                const startBtn = document.querySelector('[onclick="startTournamentTimer()"]');
-                if (startBtn) {
-                    startBtn.textContent = '▶ Start';
-                    startBtn.onclick = startTournamentTimer;
-                }
-            }
-        }
-
-        // Reset Tournament Timer
-        function resetTournamentTimer() {
-            if (tournamentState.isRunning) {
-                clearInterval(tournamentState.countdownInterval);
-                tournamentState.isRunning = false;
-                tournamentState.isPaused = false;
-            }
-
-            tournamentState.levelStartTime = null;
-            tournamentState.timeRemaining = tournamentState.levelTime * 60;
-            updateTournamentDisplay();
-            
-            // Reset button
-            const startBtn = document.querySelector('[onclick="startTournamentTimer()"]');
-            if (startBtn) {
-                startBtn.textContent = '▶ Start';
-                startBtn.onclick = startTournamentTimer;
-            }
-            
-            addActivityLog('Timer reset');
-        }
-
-        function loadTournamentData() {
-            // This is now handled by updateTournamentDisplay()
-            updateTournamentDisplay();
-        }
-
-        // 新建游戏会话
-        async function createNewSession() {
-            if (!currentUser || !(currentUser.is_admin || currentUser.username.toLowerCase() === 'peng')) {
-                alert('只有管理员可以创建新会话');
-                return;
-            }
-            if (!confirm('确定要创建新的游戏会话吗？所有当前数据将被保存并重置。')) return;
-            addActivityLog('创建了新的游戏会话 (请求已发送)');
-            try {
-                const resp = await fetch('/api/new_session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ admin_user: currentUser.username }) });
-                const data = await resp.json();
-                if (data.success) {
-                    addActivityLog('新会话已创建');
-                    loadAllData();
-                } else {
-                    alert(data.message || '创建失败');
-                }
-            } catch (e) {
-                console.error(e);
-                alert('无法创建新会话');
-            }
-        }
-
-        // 清空所有数据（包括用户和历史记录）
-        async function resetAllData() {
-            if (!currentUser || !(currentUser.is_admin || currentUser.username.toLowerCase() === 'peng')) {
-                alert('只有管理员可以清空数据');
-                return;
-            }
-            if (!confirm('⚠️ 此操作将删除所有用户账号和游戏数据，无法撤销。确定继续吗？')) return;
-            if (!confirm('再次确认：删除所有数据？此操作不可恢复！')) return;
-            
-            try {
-                const resp = await fetch('/api/reset_all', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ admin_user: currentUser.username }) 
-                });
-                const data = await resp.json();
-                if (data.success) {
-                    alert('所有数据已清空，请重新登录');
-                    // Clear local session and redirect to login
-                    currentUser = null;
-                    document.getElementById('mainApp').classList.add('hidden');
-                    document.getElementById('authModal').classList.remove('hidden');
-                    document.getElementById('loginUsername').value = '';
-                    document.getElementById('loginPassword').value = '';
-                    document.getElementById('regUsername').value = '';
-                    document.getElementById('regPassword').value = '';
-                } else {
-                    alert(data.message || '清空失败');
-                }
-            } catch (e) {
-                console.error(e);
-                alert('清空数据失败');
-            }
-        }
-
-        // 刷新所有数据
-        function refreshAllData() {
-            loadOnlineUsers();
-            loadUsersForPoints();
-            loadLeaderboard();
-            loadTrends();
-            refreshSeats();
-            addActivityLog('已刷新所有数据');
-        }
-
-        // 加载所有数据
-        function loadAllData() {
-            loadOnlineUsers();
-            loadUsersForPoints();
-            loadLeaderboard();
-            loadTrends();
-            refreshSeats();
-            loadTournamentSettings();
-            loadAdminUserList();
-        }
-
-
-
-        // Avatar change modal
-        function openAvatarModal() {
-            const modal = document.getElementById('avatarModal');
-            if (!modal) return;
-            modal.classList.remove('hidden');
-            loadAvatarPickerModal();
-        }
-
-        function closeAvatarModal() {
-            const modal = document.getElementById('avatarModal');
-            if (!modal) return;
-            modal.classList.add('hidden');
-        }
-
-        async function loadAvatarPickerModal() {
-            try {
-                const resp = await fetch('/api/avatars');
-                const data = await resp.json();
-                const picker = document.getElementById('avatarPickerModal');
-                picker.innerHTML = '';
-                const taken = new Set(data.taken || []);
-                (data.all || []).forEach(emoji => {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'w-10 h-10 text-2xl flex items-center justify-center rounded';
-                    btn.textContent = emoji;
-                    // allow current user's avatar
-                    if (taken.has(emoji) && !(currentUser && currentUser.avatar === emoji)) {
-                        btn.classList.add('opacity-40', 'cursor-not-allowed');
-                        btn.disabled = true;
-                    }
-                    btn.addEventListener('click', () => {
-                        document.getElementById('avatarPickerModalSelected').value = emoji;
-                        picker.querySelectorAll('button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
-                        btn.classList.add('ring', 'ring-2', 'ring-blue-400');
-                    });
-                    picker.appendChild(btn);
-                });
-            } catch (e) { console.error(e); }
-        }
-
-        async function saveAvatarChange() {
-            const avatar = document.getElementById('avatarPickerModalSelected').value;
-            if (!avatar) { alert('请选择头像'); return; }
-            const resp = await fetch('/api/update_avatar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser.username, avatar }) });
-            const data = await resp.json();
-            if (data.success) {
-                currentUser.avatar = avatar;
+        document.addEventListener('DOMContentLoaded', () => {
+            bindModeButtons();
+            bindNumericInputFormatting();
+            setPointsModePlaceholders();
+            loadChipRatio();
+            loadBuyinLogs();
+
+            const storedUser = hydrateCurrentUserFromStorage();
+            if (storedUser) {
+                document.getElementById('authModal').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('currentUser').textContent = `当前用户: ${currentUser.username}`;
                 const av = document.getElementById('currentAvatar');
-                if (avatar.indexOf('.') > -1) av.innerHTML = `<img src="/static/${avatar}" class="w-8 h-8 rounded-full object-cover"/>`; else av.textContent = avatar;
-                closeAvatarModal();
-                loadOnlineUsers();
-            } else {
-                alert(data.message);
-            }
-        }
-
-        // Admin: open Manage Users modal
-        function openManageUsers() {
-            console.log('openManageUsers called', currentUser);
-            if (!currentUser || !(currentUser.is_admin || currentUser.username.toLowerCase() === 'peng')) {
-                alert('只有管理员可以管理用户');
+                if (currentUser.avatar && currentUser.avatar.indexOf('.') > -1) {
+                    av.innerHTML = `<img src="/static/${currentUser.avatar}" class="w-8 h-8 rounded-full object-cover"/>`;
+                } else {
+                    av.textContent = currentUser.avatar || '';
+                }
+                document.getElementById('changeAvatarBtn').classList.remove('hidden');
+                if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
+                    document.getElementById('adminTabBtn').classList.remove('hidden');
+                    document.getElementById('generateSeatsBtn').classList.remove('hidden');
+                }
+                if (currentUser.username.toLowerCase() === 'mj') {
+                    document.getElementById('generateSeatsBtn').classList.remove('hidden');
+                }
+                initWebSocket();
+                loadAllData();
                 return;
             }
-            const modal = document.getElementById('manageUsersModal');
-            if (!modal) { console.warn('manageUsersModal not found'); return; }
-            // remove hidden class and force visible styles
-            modal.classList.remove('hidden');
-            // ensure modal is a direct child of body to avoid stacking-context issues
-            try { if (modal.parentElement !== document.body) document.body.appendChild(modal); } catch (e) { console.warn('append modal to body failed', e); }
-            try {
-                modal.style.display = 'flex';
-                modal.style.zIndex = '9999';
-                modal.style.opacity = '1';
-                modal.style.visibility = 'visible';
-                modal.style.pointerEvents = 'auto';
-            } catch (e) { console.warn('could not set modal styles', e); }
-            console.log('manage modal shown:', modal);
-            loadManageUsers();
-        }
 
-        function closeManageUsers() {
-            const modal = document.getElementById('manageUsersModal');
-            if (!modal) return;
-            modal.classList.add('hidden');
-            try { modal.style.display = 'none'; modal.style.pointerEvents = 'none'; modal.style.visibility = 'hidden'; } catch (e) {}
-        }
-
-        async function loadManageUsers() {
-            try {
-                const resp = await fetch('/api/users_all');
-                const data = await resp.json();
-                console.log('manage users payload', data);
-                const list = document.getElementById('manageUsersList');
-                if (!list) return;
-                list.innerHTML = '';
-                const users = data.users || [];
-                if (users.length === 0) {
-                    const none = document.createElement('div');
-                    none.className = 'p-3 text-sm muted';
-                    none.textContent = '无用户';
-                    list.appendChild(none);
-                    return;
-                }
-                users.forEach(u => {
-                    const row = document.createElement('div');
-                    row.className = 'flex items-center justify-between p-2 border-b';
-                    const left = document.createElement('div');
-                    left.className = 'flex items-center gap-3';
-                    const avatar = document.createElement('div');
-                    avatar.className = 'w-8 h-8 rounded-full flex items-center justify-center';
-                    avatar.textContent = u.avatar || '';
-                    const name = document.createElement('div');
-                    name.textContent = u.username;
-                    left.appendChild(avatar);
-                    left.appendChild(name);
-                    row.appendChild(left);
-
-                    const right = document.createElement('div');
-                    // prevent admin from deactivating themselves
-                    if (currentUser && currentUser.username === u.username) {
-                        const badge = document.createElement('div');
-                        badge.className = 'text-sm muted';
-                        badge.textContent = '当前管理员';
-                        right.appendChild(badge);
-                    } else {
-                        if (u.active) {
-                            const btn = document.createElement('button');
-                            btn.className = 'px-2 py-1 rounded bg-red-600 text-white text-sm';
-                            btn.textContent = '停用';
-                            btn.addEventListener('click', () => deactivateUser(u.username));
-                            right.appendChild(btn);
-                        } else {
-                            const btn = document.createElement('button');
-                            btn.className = 'px-2 py-1 rounded bg-green-600 text-white text-sm';
-                            btn.textContent = '恢复';
-                            btn.addEventListener('click', () => reactivateUser(u.username));
-                            right.appendChild(btn);
-                        }
-                    }
-                    row.appendChild(right);
-                    list.appendChild(row);
-                });
-            } catch (e) {
-                console.error('加载管理用户失败', e);
-            }
-        }
-
-        async function reactivateUser(username) {
-            if (!confirm(`确认恢复用户 ${username} 吗？`)) return;
-            try {
-                const resp = await fetch('/api/reactivate_user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ admin_user: currentUser.username, username }) });
-                const data = await resp.json();
-                if (data.success) {
-                    addActivityLog(`管理员 ${currentUser.username} 恢复用户 ${username}`);
-                    loadManageUsers();
-                    loadOnlineUsers();
-                    loadUsersForPoints();
-                    loadLeaderboard();
-                    refreshSeats();
-                } else {
-                    alert(data.message || '恢复失败');
-                }
-            } catch (e) {
-                console.error('恢复用户失败', e);
-                alert('恢复失败');
-            }
-        }
-
-        async function deactivateUser(username) {
-            if (!confirm(`确认停用用户 ${username} 吗？该用户将从排行榜和座位分配中移除。`)) return;
-            try {
-                const resp = await fetch('/api/delete_user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ admin_user: currentUser.username, username }) });
-                const data = await resp.json();
-                if (data.success) {
-                    addActivityLog(`管理员 ${currentUser.username} 停用用户 ${username}`);
-                    // refresh related UI
-                    loadManageUsers();
-                    loadOnlineUsers();
-                    loadUsersForPoints();
-                    loadLeaderboard();
-                    refreshSeats();
-                } else {
-                    alert(data.message || '停用失败');
-                }
-            } catch (e) {
-                console.error('停用用户失败', e);
-                alert('停用失败');
-            }
-        }
+            toggleAuthModal('login');
+        });
     </script>
-
-    <!-- Avatar modal -->
-    <div id="avatarModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="app-card rounded-lg p-6 w-96">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">更改头像</h2>
-                <button onclick="closeAvatarModal()" class="text-gray-400 hover:text-gray-300">&times;</button>
-            </div>
-            <div id="avatarPickerModal" class="flex flex-wrap gap-2 p-2 border rounded bg-gray-100 max-h-40 overflow-y-auto"></div>
-            <input type="hidden" id="avatarPickerModalSelected" />
-            <div class="mt-4 flex justify-end gap-2">
-                <button onclick="closeAvatarModal()" class="px-4 py-2 rounded bg-gray-300">取消</button>
-                <button onclick="saveAvatarChange()" class="px-4 py-2 rounded bg-blue-600 text-white">保存</button>
-            </div>
-    </div>
-
-    <!-- Manage Users modal (admin) -->
-    <div id="manageUsersModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="app-card rounded-lg p-6 w-96">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">管理用户</h2>
-                <button onclick="closeManageUsers()" class="text-gray-400 hover:text-gray-300">&times;</button>
-            </div>
-            <div id="manageUsersList" class="max-h-60 overflow-y-auto"></div>
-            <div class="mt-4 flex justify-end gap-2">
-                <button onclick="closeManageUsers()" class="px-4 py-2 rounded bg-gray-300">关闭</button>
-            </div>
-        </div>
-    </div>
 </body>
 </html>
