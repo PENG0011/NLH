@@ -21,20 +21,6 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# 可用的唯一 Emoji 头像列表
-EMOJI_AVATARS = [
-    '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯',
-    '🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🐤','🦆',
-    '🦅','🦉','🦇','🐺','🦄','🐝','🐛','🦋','🐌','🐞',
-    '🐢','🐍','🦖','🦕','🐙','🦑','🦐','🦞','🐬','🐳',
-    '🐋','🦈','🐠','🐟','🐊','🦣','🐘','🐐','🐏','🐑',
-    '🦒','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒',
-    '🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦉','🦅',
-    '🦆','🦢','🦜','🦚','🦃','🦚','🦜','🦢','🦆','🕊️',
-    '🐓','🐔','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺',
-    '🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟'
-]
-
 # 数据库初始化
 def init_db():
     conn = sqlite3.connect("score_system.db")
@@ -50,6 +36,7 @@ def init_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     ''')
+    cursor.execute("UPDATE users SET is_admin = CASE WHEN LOWER(username) = 'peng' THEN 1 ELSE 0 END")
 
     # 游戏会话表
     cursor.execute('''
@@ -98,6 +85,24 @@ def init_db():
     )
     ''')
     cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('chip_ratio', '1')")
+    legacy_ratio_row = cursor.execute("SELECT value FROM settings WHERE key = 'chip_ratio'").fetchone()
+    try:
+        legacy_ratio = float(legacy_ratio_row[0]) if legacy_ratio_row else 1.0
+    except (TypeError, ValueError):
+        legacy_ratio = 1.0
+    if legacy_ratio <= 0:
+        legacy_ratio = 1.0
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('exchange_amount', '1')")
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('exchange_chips', ?)", (str(legacy_ratio),))
+    for setting_key, default_value in (
+        ('squid_base_amount', '1'),
+        ('squid_multiplier_3', '2'),
+        ('squid_multiplier_5', '4'),
+        ('squid_multiplier_7', '6'),
+        ('squid_multiplier_9', '8'),
+        ('squid_multiplier_11', '10'),
+    ):
+        cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (setting_key, default_value))
 
     # buyin 日志表
     cursor.execute('''
@@ -119,6 +124,25 @@ def init_db():
     buyin_log_columns = [row[1] for row in cursor.execute("PRAGMA table_info(buyin_logs)").fetchall()]
     if "action" not in buyin_log_columns:
         cursor.execute("ALTER TABLE buyin_logs ADD COLUMN action TEXT NOT NULL DEFAULT 'buy_in'")
+    if "rate_amount" not in buyin_log_columns:
+        cursor.execute("ALTER TABLE buyin_logs ADD COLUMN rate_amount REAL NOT NULL DEFAULT 1")
+    if "rate_chips" not in buyin_log_columns:
+        cursor.execute("ALTER TABLE buyin_logs ADD COLUMN rate_chips REAL NOT NULL DEFAULT 1")
+        cursor.execute("UPDATE buyin_logs SET rate_chips = ratio WHERE ratio != 1")
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS rebalance_history (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        snapshot TEXT NOT NULL,
+        after_snapshot TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        undone INTEGER NOT NULL DEFAULT 0
+    )
+    ''')
+    rebalance_columns = [row[1] for row in cursor.execute("PRAGMA table_info(rebalance_history)").fetchall()]
+    if "after_snapshot" not in rebalance_columns:
+        cursor.execute("ALTER TABLE rebalance_history ADD COLUMN after_snapshot TEXT")
 
     conn.commit()
     conn.close()
@@ -154,7 +178,7 @@ ensure_data_dirs()
 def save_users_file():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT username, avatar, is_admin, created_at, active FROM users")
+    cur.execute("SELECT username, is_admin, created_at, active FROM users")
     rows = cur.fetchall()
     conn.close()
     users = []
@@ -164,8 +188,7 @@ def save_users_file():
         except Exception:
             active_val = True
         users.append({
-            "username": r["username"],
-            "avatar": r["avatar"],
+            "username": r["username"].upper(),
             "is_admin": bool(r["is_admin"]),
             "active": active_val,
             "created_at": r["created_at"]
@@ -190,7 +213,6 @@ def create_session_file(session_id: str, name: str):
 
 def save_seats_file(session_id: str, seats, mirror=False):
     ensure_data_dirs()
-    ts = int(time.time())
     obj = {
         "session_id": session_id,
         "seats": seats,
@@ -200,10 +222,7 @@ def save_seats_file(session_id: str, seats, mirror=False):
     latest_path = os.path.join(SEATS_DIR, f"{session_id}_latest.json")
     with open(latest_path, "w", encoding="utf-8") as f:
         json.dump(obj, f, ensure_ascii=False, indent=2)
-    archive_path = os.path.join(SEATS_DIR, f"{session_id}_{ts}.json")
-    with open(archive_path, "w", encoding="utf-8") as f:
-        json.dump(obj, f, ensure_ascii=False, indent=2)
-    return latest_path, archive_path
+    return latest_path
 
 
 class ConnectionManager:
@@ -245,7 +264,6 @@ last_seats = []
 
 class UserCreate(BaseModel):
     username: str
-    avatar: Optional[str] = "default_avatar.png"
 
 
 class ScoreUpdate(BaseModel):
@@ -275,17 +293,25 @@ def get_user_by_username(username: str) -> Optional[dict]:
         username = username.encode('latin-1').decode('utf-8')
     except Exception:
         pass
+    normalized = str(username or '').strip().casefold()
+    if not normalized:
+        return None
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
-    user = cursor.fetchone()
+    cursor.execute("SELECT * FROM users")
+    user = next((row for row in cursor.fetchall() if str(row['username']).casefold() == normalized), None)
     conn.close()
     if user:
         user_dict = dict(user)
-        if username.lower() == 'peng':
+        if user_dict['username'].casefold() == 'peng':
             user_dict['is_admin'] = True
         return user_dict
     return None
+
+
+def is_peng_admin(username: str) -> bool:
+    user = get_user_by_username(username)
+    return bool(user and user.get("username", "").casefold() == "peng")
 
 
 def get_or_create_default_session() -> str:
@@ -388,17 +414,25 @@ def set_setting(key: str, value: str):
     conn.close()
 
 
-def get_chip_ratio() -> float:
+def get_exchange_rate() -> Tuple[float, float]:
     try:
-        return float(get_setting("chip_ratio", "1") or 1)
+        amount = float(get_setting("exchange_amount", "1") or 1)
+        chips = float(get_setting("exchange_chips", get_setting("chip_ratio", "1")) or 1)
+        if amount > 0 and chips > 0:
+            return amount, chips
     except Exception:
-        return 1.0
+        pass
+    return 1.0, 1.0
+
+
+def get_chip_ratio() -> float:
+    amount, chips = get_exchange_rate()
+    return chips / amount
 
 
 def normalize_amount_by_mode(raw_amount: float, mode: str = "amount") -> float:
-    ratio = get_chip_ratio()
-    if ratio <= 0:
-        ratio = 1.0
+    _, rate_chips = get_exchange_rate()
+    ratio = rate_chips / get_exchange_rate()[0]
     amount = float(raw_amount or 0)
     if str(mode).lower() == "chips":
         return amount / ratio
@@ -409,7 +443,8 @@ def add_buyin_log(username: str, session_id: str, amount: float, action: str = "
     user = get_user_by_username(username)
     if not user:
         return
-    ratio = get_chip_ratio()
+    rate_amount, rate_chips = get_exchange_rate()
+    ratio = rate_chips / rate_amount
     if ratio <= 0:
         ratio = 1.0
     chips = float(amount) * ratio
@@ -417,8 +452,8 @@ def add_buyin_log(username: str, session_id: str, amount: float, action: str = "
     cur = conn.cursor()
     log_id = str(uuid.uuid4())
     cur.execute(
-        "INSERT INTO buyin_logs (id, user_id, username, session_id, action, amount, chips, ratio, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
-        (log_id, user["id"], username, session_id, action, float(amount), float(chips), float(ratio)),
+        "INSERT INTO buyin_logs (id, user_id, username, session_id, action, amount, chips, ratio, rate_amount, rate_chips, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
+        (log_id, user["id"], username, session_id, action, float(amount), float(chips), 1.0, 1.0, 1.0),
     )
     conn.commit()
     conn.close()
@@ -484,29 +519,21 @@ async def register(user: UserCreate):
     if get_user_by_username(user.username):
         return JSONResponse({"success": False, "message": "用户名已存在"})
 
-    avatar_choice = user.avatar or 'default_avatar.png'
-    if avatar_choice in EMOJI_AVATARS:
-        conn_chk = get_db_connection()
-        cur_chk = conn_chk.cursor()
-        cur_chk.execute("SELECT username FROM users WHERE avatar = ?", (avatar_choice,))
-        exists = cur_chk.fetchone()
-        conn_chk.close()
-        if exists:
-            return JSONResponse({"success": False, "message": "该表情已被其他用户选择，请选择其他头像"})
+    username = user.username.strip().upper()
 
     user_id = str(uuid.uuid4())
-    is_admin_flag = 1 if user.username and user.username.lower() == 'peng' else 0
+    is_admin_flag = 1 if username.casefold() == 'peng' else 0
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO users (id, username, avatar, is_admin) VALUES (?, ?, ?, ?)",
-        (user_id, user.username, user.avatar, is_admin_flag)
+        "INSERT INTO users (id, username, is_admin) VALUES (?, ?, ?)",
+        (user_id, username, is_admin_flag)
     )
     conn.commit()
     conn.close()
 
     session_id = get_or_create_default_session()
-    update_user_score(user.username, session_id, {"brought": 0, "current": 0, "win_loss": 0})
+    update_user_score(username, session_id, {"brought": 0, "current": 0, "win_loss": 0})
     try:
         save_users_file()
     except Exception:
@@ -515,24 +542,11 @@ async def register(user: UserCreate):
     return JSONResponse({"success": True, "message": "注册成功"})
 
 
-@app.get('/api/avatars')
-async def api_avatars():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT avatar FROM users WHERE active != 0 AND avatar IN ({})".format(
-        ','.join('?' for _ in EMOJI_AVATARS)
-    ), EMOJI_AVATARS)
-    rows = cursor.fetchall()
-    taken = [r['avatar'] for r in rows]
-    conn.close()
-    return {"all": EMOJI_AVATARS, "taken": taken}
-
-
 @app.get('/api/users_all')
 async def api_users_all():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT username, avatar, active, is_admin FROM users")
+    cursor.execute("SELECT username, active, is_admin FROM users")
     users = []
     for row in cursor.fetchall():
         try:
@@ -543,37 +557,85 @@ async def api_users_all():
             is_admin_val = bool(row["is_admin"])
         except Exception:
             is_admin_val = False
-        if row["username"].lower() == "peng":
+        if row["username"].casefold() == "peng":
             is_admin_val = True
-        users.append({"username": row["username"], "avatar": row["avatar"], "active": active_val, "is_admin": is_admin_val})
+        users.append({"username": row["username"].upper(), "active": active_val, "is_admin": is_admin_val})
     conn.close()
     return {"users": users}
 
 
 @app.get('/api/settings')
 async def api_get_settings():
-    return {"chip_ratio": get_chip_ratio()}
+    amount, chips = get_exchange_rate()
+    return {"exchange_amount": amount, "exchange_chips": chips, "chip_ratio": chips / amount}
+
+
+def read_squid_settings() -> dict:
+    return {
+        "base_amount": float(get_setting("squid_base_amount", "1") or 1),
+        "multipliers": {
+            str(threshold): float(get_setting(f"squid_multiplier_{threshold}", str(default)) or default)
+            for threshold, default in ((3, 2), (5, 4), (7, 6), (9, 8), (11, 10))
+        },
+    }
+
+
+@app.get('/api/squid_settings')
+async def api_get_squid_settings():
+    settings = read_squid_settings()
+    settings["base_chips"] = settings["base_amount"] * get_chip_ratio()
+    return settings
+
+
+@app.post('/api/squid_settings')
+async def api_update_squid_settings(request: Request):
+    payload = await request.json()
+    admin_user = payload.get('admin_user')
+    if not is_peng_admin(admin_user):
+        return JSONResponse({"success": False, "message": "只有 PENG 可以设置 Squid 罚金"}, status_code=403)
+    try:
+        base_amount = float(payload.get('base_amount'))
+        multipliers = payload.get('multipliers') or {}
+        parsed = {str(t): float(multipliers[str(t)]) for t in (3, 5, 7, 9, 11)}
+    except (TypeError, ValueError, KeyError):
+        return JSONResponse({"success": False, "message": "请填写有效的基础金额和全部倍率"})
+    if not math.isfinite(base_amount) or base_amount <= 0 or any(not math.isfinite(value) or value < 0 for value in parsed.values()):
+        return JSONResponse({"success": False, "message": "基础金额必须大于 0，倍率不能小于 0"})
+    set_setting("squid_base_amount", str(base_amount))
+    for threshold, multiplier in parsed.items():
+        set_setting(f"squid_multiplier_{threshold}", str(multiplier))
+    settings = {"base_amount": base_amount, "multipliers": parsed, "base_chips": base_amount * get_chip_ratio()}
+    await manager.broadcast({"type": "squid_settings_changed", **settings})
+    return {"success": True, **settings}
 
 
 @app.post('/api/settings')
 async def api_update_settings(request: Request):
     payload = await request.json()
     admin_user = payload.get('admin_user')
-    ratio = payload.get('chip_ratio')
     if not admin_user:
         return JSONResponse({"success": False, "message": "admin_user required"})
-    admin = get_user_by_username(admin_user)
-    if not admin or not admin.get('is_admin'):
-        return JSONResponse({"success": False, "message": "only admins can update settings"})
+    if not is_peng_admin(admin_user):
+        return JSONResponse({"success": False, "message": "only PENG can update settings"}, status_code=403)
     try:
-        ratio_value = float(ratio)
-    except Exception:
-        return JSONResponse({"success": False, "message": "chip_ratio must be a number"})
-    if ratio_value <= 0:
-        return JSONResponse({"success": False, "message": "chip_ratio must be > 0"})
+        if 'exchange_amount' in payload and 'exchange_chips' in payload:
+            amount_value = float(payload['exchange_amount'])
+            chips_value = float(payload['exchange_chips'])
+        else:
+            # Keep accepting older clients that submit chips per one currency unit.
+            amount_value = 1.0
+            chips_value = float(payload.get('chip_ratio'))
+    except (TypeError, ValueError):
+        return JSONResponse({"success": False, "message": "兑换金额和筹码数必须是数字"})
+    if not math.isfinite(amount_value) or not math.isfinite(chips_value) or amount_value <= 0 or chips_value <= 0:
+        return JSONResponse({"success": False, "message": "兑换金额和筹码数必须大于 0"})
+    ratio_value = chips_value / amount_value
+    set_setting("exchange_amount", str(amount_value))
+    set_setting("exchange_chips", str(chips_value))
     set_setting("chip_ratio", str(ratio_value))
-    await manager.broadcast({"type": "settings_changed", "chip_ratio": ratio_value})
-    return {"success": True, "chip_ratio": ratio_value}
+    settings = {"exchange_amount": amount_value, "exchange_chips": chips_value, "chip_ratio": ratio_value}
+    await manager.broadcast({"type": "settings_changed", **settings})
+    return {"success": True, **settings}
 
 
 @app.post('/api/toggle_admin')
@@ -590,27 +652,7 @@ async def api_toggle_admin(request: Request):
 
     if target_user.lower() == 'peng':
         return JSONResponse({"success": False, "message": "无法更改 peng 的管理员状态"})
-
-    target = get_user_by_username(target_user)
-    if not target:
-        return JSONResponse({"success": False, "message": "用户不存在"})
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-    current_admin = bool(target.get('is_admin', 0))
-    new_admin_status = 0 if current_admin else 1
-    cur.execute("UPDATE users SET is_admin = ? WHERE username = ?", (new_admin_status, target_user))
-    conn.commit()
-    conn.close()
-
-    try:
-        save_users_file()
-    except Exception:
-        pass
-
-    action = "升级为" if new_admin_status else "降级为"
-    await manager.broadcast({"type": "admin_status_changed", "username": target_user, "is_admin": bool(new_admin_status)})
-    return {"success": True, "message": f"已{action}管理员", "is_admin": bool(new_admin_status)}
+    return JSONResponse({"success": False, "message": "PENG 是唯一管理员，不能授予其他账号管理员权限"})
 
 
 @app.post('/api/reactivate_user')
@@ -623,9 +665,8 @@ async def api_reactivate_user(request: Request):
     target = payload.get('username')
     if not admin_user or not target:
         return JSONResponse({"success": False, "message": "admin_user and username required"})
-    admin = get_user_by_username(admin_user)
-    if not admin or not admin.get('is_admin'):
-        return JSONResponse({"success": False, "message": "only admins can reactivate users"})
+    if not is_peng_admin(admin_user):
+        return JSONResponse({"success": False, "message": "only PENG can reactivate users"}, status_code=403)
 
     user = get_user_by_username(target)
     if not user:
@@ -633,7 +674,7 @@ async def api_reactivate_user(request: Request):
 
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE users SET active = 1 WHERE username = ?", (target,))
+    cur.execute("UPDATE users SET active = 1 WHERE id = ?", (user["id"],))
     conn.commit()
     conn.close()
 
@@ -644,41 +685,6 @@ async def api_reactivate_user(request: Request):
 
     await manager.broadcast({"type": "user_status", "action": "reactivated", "username": target})
     return {"success": True}
-
-
-@app.post('/api/update_avatar')
-async def api_update_avatar(payload: dict):
-    username = payload.get('username')
-    avatar = payload.get('avatar')
-    if not username or avatar is None:
-        return JSONResponse({"success": False, "message": "invalid payload"})
-
-    user = get_user_by_username(username)
-    if not user:
-        return JSONResponse({"success": False, "message": "user not found"})
-
-    if avatar in EMOJI_AVATARS:
-        conn_chk = get_db_connection()
-        cur_chk = conn_chk.cursor()
-        cur_chk.execute("SELECT username FROM users WHERE avatar = ? AND username != ?", (avatar, username))
-        exists = cur_chk.fetchone()
-        conn_chk.close()
-        if exists:
-            return JSONResponse({"success": False, "message": "该表情已被其他用户选择"})
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE users SET avatar = ? WHERE username = ?", (avatar, username))
-    conn.commit()
-    conn.close()
-
-    try:
-        save_users_file()
-    except Exception:
-        pass
-
-    await manager.broadcast({"type": "user_status", "action": "avatar_change", "username": username, "avatar": avatar})
-    return JSONResponse({"success": True})
 
 
 @app.post("/login")
@@ -692,8 +698,7 @@ async def login(username: str = Form()):
         "success": True,
         "token": token,
         "user": {
-            "username": user["username"],
-            "avatar": user["avatar"],
+            "username": user["username"].upper(),
             "is_admin": user["is_admin"]
         }
     })
@@ -703,8 +708,8 @@ async def login(username: str = Form()):
 async def get_all_users():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT username, avatar FROM users WHERE active != 0")
-    users = [{"username": row["username"], "avatar": row["avatar"]} for row in cursor.fetchall()]
+    cursor.execute("SELECT username FROM users WHERE active != 0")
+    users = [{"username": row["username"].upper()} for row in cursor.fetchall()]
     conn.close()
     return {"users": users}
 
@@ -724,7 +729,7 @@ async def get_all_scores():
     total_win_loss = 0
     for row in cursor.fetchall():
         score = {
-            "player": row["username"],
+            "player": row["username"].upper(),
             "brought": row["brought"],
             "current": row["current"],
             "win_loss": row["win_loss"]
@@ -823,50 +828,112 @@ async def update_score(data: ScoreUpdate):
 @app.post("/api/rebalance")
 async def rebalance(data: RebalanceRequest):
     session_id = get_or_create_default_session()
-    scores = await get_all_scores()
-    total_win_loss = scores["total_win_loss"]
-    if abs(total_win_loss) < 0.01:
-        return {"success": True, "message": "无需重新平衡"}
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT s.id, s.user_id, u.username, s.brought, s.current, s.win_loss
+        FROM scores s JOIN users u ON u.id = s.user_id
+        WHERE s.session_id = ? AND u.active != 0
+    ''', (session_id,))
+    rows = [dict(row) for row in cur.fetchall()]
+    total_win_loss = sum(float(row["win_loss"] or 0) for row in rows)
+    if abs(total_win_loss) < 0.005:
+        conn.close()
+        return {"success": True, "message": "当前输赢已平衡"}
 
-    winners = [s for s in scores["scores"] if s["win_loss"] > 0]
-    losers = [s for s in scores["scores"] if s["win_loss"] < 0]
+    is_net_loss = total_win_loss < 0
+    participants = [row for row in rows if (row["win_loss"] < 0 if is_net_loss else row["win_loss"] > 0)]
+    if not participants:
+        conn.close()
+        return {"success": False, "message": "没有可用于平衡的输家或赢家"}
 
-    def random_split(total, n):
-        if n <= 0:
-            return []
-        weights = [random.random() for _ in range(n)]
-        s = sum(weights)
-        if s == 0:
-            return [total / n] * n
-        return [total * (w / s) for w in weights]
+    amount_left = abs(total_win_loss)
+    allocations = {row["id"]: 0.0 for row in participants}
+    active = participants[:]
+    while active and amount_left > 1e-9:
+        weights = {row["id"]: random.random() + 1e-9 for row in active}
+        weight_sum = sum(weights.values())
+        capped = []
+        for row in active:
+            capacity = abs(float(row["win_loss"])) - allocations[row["id"]]
+            proposed = amount_left * weights[row["id"]] / weight_sum
+            if proposed >= capacity - 1e-9:
+                allocations[row["id"]] += capacity
+                amount_left -= capacity
+                capped.append(row)
+        if capped:
+            capped_ids = {row["id"] for row in capped}
+            active = [row for row in active if row["id"] not in capped_ids]
+            continue
+        for row in active:
+            allocations[row["id"]] += amount_left * weights[row["id"]] / weight_sum
+        amount_left = 0.0
 
-    if total_win_loss < 0:
-        amount_needed = -total_win_loss
-        losers.sort(key=lambda x: x["win_loss"])
-        selected = losers[: max(1, min(len(losers), data.count))]
-        if not selected:
-            return {"success": False, "message": "没有可调整的输家"}
+    snapshot = [{"id": row["id"], "current": row["current"], "win_loss": row["win_loss"]} for row in rows]
+    batch_id = str(uuid.uuid4())
+    cur.execute(
+        "INSERT INTO rebalance_history (id, session_id, snapshot) VALUES (?, ?, ?)",
+        (batch_id, session_id, json.dumps(snapshot)),
+    )
+    for row in participants:
+        delta = allocations[row["id"]]
+        new_win_loss = float(row["win_loss"]) + delta if is_net_loss else float(row["win_loss"]) - delta
+        new_current = float(row["current"]) + delta if is_net_loss else float(row["current"]) - delta
+        cur.execute(
+            "UPDATE scores SET win_loss = ?, current = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (new_win_loss, new_current, row["id"]),
+        )
+        cur.execute(
+            "INSERT INTO score_history (id, user_id, session_id, current, win_loss) VALUES (?, ?, ?, ?, ?)",
+            (str(uuid.uuid4()), row["user_id"], session_id, new_current, new_win_loss),
+        )
+    cur.execute("SELECT id, current, win_loss FROM scores WHERE session_id = ?", (session_id,))
+    after_snapshot = [dict(row) for row in cur.fetchall()]
+    cur.execute("UPDATE rebalance_history SET after_snapshot = ? WHERE id = ?", (json.dumps(after_snapshot), batch_id))
+    conn.commit()
+    conn.close()
 
-        deltas = random_split(amount_needed, len(selected))
-        for loser, delta in zip(selected, deltas):
-            new_win = loser["win_loss"] + delta
-            new_current = max(0, loser["current"] + delta)
-            update_user_score(loser["player"], session_id, {"win_loss": new_win, "current": new_current})
-    else:
-        amount_needed = total_win_loss
-        winners.sort(key=lambda x: x["win_loss"], reverse=True)
-        selected = winners[: max(1, min(len(winners), data.count))]
-        if not selected:
-            return {"success": False, "message": "没有可调整的赢家"}
+    message = "已随机调整输家亏损，使总盈亏归零" if is_net_loss else "已随机调整赢家盈利，使总盈亏归零"
+    await manager.broadcast({"type": "rebalance", "message": message})
+    return {"success": True, "message": message, "batch_id": batch_id}
 
-        deltas = random_split(amount_needed, len(selected))
-        for winner, delta in zip(selected, deltas):
-            new_win = winner["win_loss"] - delta
-            new_current = max(0, winner["current"] - delta)
-            update_user_score(winner["player"], session_id, {"win_loss": new_win, "current": new_current})
 
-    await manager.broadcast({"type": "rebalance", "message": "已完成重新平衡"})
-    return {"success": True}
+@app.post("/api/rebalance/undo")
+async def undo_rebalance():
+    session_id = get_or_create_default_session()
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, snapshot, after_snapshot FROM rebalance_history WHERE session_id = ? AND undone = 0 ORDER BY created_at DESC, rowid DESC LIMIT 1",
+        (session_id,),
+    )
+    batch = cur.fetchone()
+    if not batch:
+        conn.close()
+        return {"success": False, "message": "没有可撤销的平衡记录"}
+
+    snapshot = json.loads(batch["snapshot"])
+    expected = json.loads(batch["after_snapshot"] or "[]")
+    for row in expected:
+        cur.execute("SELECT current, win_loss FROM scores WHERE id = ?", (row["id"],))
+        current = cur.fetchone()
+        if not current or abs(float(current["current"]) - float(row["current"])) > 1e-8 or abs(float(current["win_loss"]) - float(row["win_loss"])) > 1e-8:
+            conn.close()
+            return JSONResponse({"success": False, "message": "平衡后数据已变化，为避免覆盖新记录，请勿撤销"}, status_code=409)
+    for row in snapshot:
+        cur.execute("UPDATE scores SET current = ?, win_loss = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (row["current"], row["win_loss"], row["id"]))
+        cur.execute("SELECT user_id FROM scores WHERE id = ?", (row["id"],))
+        score_row = cur.fetchone()
+        if score_row:
+            cur.execute(
+                "INSERT INTO score_history (id, user_id, session_id, current, win_loss) VALUES (?, ?, ?, ?, ?)",
+                (str(uuid.uuid4()), score_row["user_id"], session_id, row["current"], row["win_loss"]),
+            )
+    cur.execute("UPDATE rebalance_history SET undone = 1 WHERE id = ?", (batch["id"],))
+    conn.commit()
+    conn.close()
+    await manager.broadcast({"type": "rebalance", "message": "已撤销最近一次平衡"})
+    return {"success": True, "message": "已撤销最近一次平衡"}
 
 
 @app.post("/api/generate_seats")
@@ -876,6 +943,9 @@ async def generate_seats(request: Request):
         body = await request.json()
     except Exception:
         body = {}
+
+    if not is_peng_admin(body.get("admin_user")):
+        return JSONResponse({"success": False, "message": "只有 PENG 可以生成座位"}, status_code=403)
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -941,9 +1011,14 @@ async def generate_seats(request: Request):
 
 @app.get('/api/seats')
 async def get_seats():
-    if isinstance(last_seats, dict):
-        return last_seats
-    else:
+    session_id = get_or_create_default_session()
+    latest_path = os.path.join(SEATS_DIR, f"{session_id}_latest.json")
+    try:
+        with open(latest_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        if isinstance(last_seats, dict):
+            return last_seats
         return {"seats": last_seats, "mirror": False}
 
 
@@ -967,9 +1042,8 @@ async def api_new_session(payload: dict):
     if not admin_user:
         return JSONResponse({"success": False, "message": "admin_user required"})
 
-    admin = get_user_by_username(admin_user)
-    if not admin or not admin.get('is_admin'):
-        return JSONResponse({"success": False, "message": "only admins can create sessions"})
+    if not is_peng_admin(admin_user):
+        return JSONResponse({"success": False, "message": "only PENG can create sessions"}, status_code=403)
 
     try:
         current_session = get_or_create_default_session()
@@ -1046,9 +1120,8 @@ async def api_delete_user(request: Request):
     target = payload.get('username')
     if not admin_user or not target:
         return JSONResponse({"success": False, "message": "admin_user and username required"})
-    admin = get_user_by_username(admin_user)
-    if not admin or not admin.get('is_admin'):
-        return JSONResponse({"success": False, "message": "only admins can delete users"})
+    if not is_peng_admin(admin_user):
+        return JSONResponse({"success": False, "message": "only PENG can delete users"}, status_code=403)
 
     user = get_user_by_username(target)
     if not user:
@@ -1056,7 +1129,7 @@ async def api_delete_user(request: Request):
 
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE users SET active = 0 WHERE username = ?", (target,))
+    cur.execute("UPDATE users SET active = 0 WHERE id = ?", (user["id"],))
     conn.commit()
     conn.close()
 
@@ -1082,9 +1155,8 @@ async def api_reset_all(payload: dict):
     if not admin_user:
         return JSONResponse({"success": False, "message": "admin_user required"})
 
-    admin = get_user_by_username(admin_user)
-    if not admin or not admin.get('is_admin'):
-        return JSONResponse({"success": False, "message": "only admins can reset all data"})
+    if not is_peng_admin(admin_user):
+        return JSONResponse({"success": False, "message": "only PENG can reset all data"}, status_code=403)
 
     try:
         conn = get_db_connection()
@@ -1096,6 +1168,7 @@ async def api_reset_all(payload: dict):
         cur.execute("DELETE FROM game_sessions")
         cur.execute("DELETE FROM settings")
         cur.execute("DELETE FROM buyin_logs")
+        cur.execute("DELETE FROM rebalance_history")
 
         conn.commit()
         conn.close()

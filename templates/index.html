@@ -66,6 +66,7 @@
         .segmented{display:inline-flex;background:rgba(15,23,42,0.8);padding:4px;border-radius:999px;border:1px solid rgba(148,163,184,0.15)}
         .segmented button{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;color:var(--muted);transition:all .2s}
         .segmented button.active{background:linear-gradient(135deg,#3b82f6,#60a5fa);color:white;box-shadow:0 8px 18px rgba(59,130,246,0.32)}
+        .points-user-choice.active{background:linear-gradient(135deg,#3b82f6,#60a5fa);color:#fff;border-color:rgba(96,165,250,.65)}
         @media (max-width: 720px){
             .container{padding:12px 10px 24px}
             .app-card{border-radius:16px}
@@ -100,11 +101,6 @@
                         <label class="block muted mb-2">用户名</label>
                         <input type="text" id="regUsername" class="w-full px-3 py-2 border rounded">
                     </div>
-                    <div class="mb-4">
-                            <label class="block muted mb-2">头像（请选择一个表情，唯一）</label>
-                            <div id="avatarPicker" class="flex flex-wrap gap-2 p-2 border rounded bg-gray-100 max-h-40 overflow-y-auto"></div>
-                            <input type="hidden" id="regAvatar" value="default_avatar.png">
-                        </div>
                     <button onclick="register()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">注册</button>
                     <p class="mt-2 text-sm">已有账号？<a onclick="toggleAuthModal('login')" class="text-blue-500">登录</a></p>
                 </div>
@@ -133,12 +129,10 @@
 
             <div class="flex items-center gap-2">
                 <div id="currentUserContainer" class="flex items-center gap-2">
-                    <div id="currentAvatar" class="w-8 h-8 rounded-full flex items-center justify-center bg-[rgba(255,255,255,0.03)] text-xs"></div>
                     <div>
                         <div id="currentUser" class="text-xs font-medium"></div>
                         <div class="text-xs muted">online</div>
                     </div>
-                    <button id="changeAvatarBtn" onclick="openAvatarModal()" class="text-xs px-2 py-1 rounded hidden">Change</button>
                 </div>
                 <button onclick="logout()" class="px-3 py-1 text-sm rounded bg-gradient-to-br from-red-500 to-pink-500 text-white shadow-sm">退出</button>
             </div>
@@ -151,6 +145,7 @@
                 <button onclick="switchTab('points')" class="tab-btn">Points</button>
                 <button onclick="switchTab('leaderboard')" class="tab-btn active">Leaderboard</button>
                 <button onclick="switchTab('seats')" class="tab-btn">Seats</button>
+                <button onclick="switchTab('squid')" class="tab-btn">Squid</button>
                 <button id="adminTabBtn" onclick="switchTab('admin')" class="tab-btn hidden">Admin</button>
             </div>
         </nav>
@@ -166,7 +161,7 @@
                 <div class="mt-4 mobile-shell">
                     <div class="flex items-center justify-between mb-2">
                         <h3 class="text-sm font-bold">Buy-in Log</h3>
-                        <span class="text-[10px] muted">筹码比例: <span id="statusChipRatioLabel">1</span></span>
+                        <span class="text-[10px] muted">兑换规则: <span id="statusChipRatioLabel">1.00 元 = 1.00 筹码</span></span>
                     </div>
                     <div id="buyinLogList" class="space-y-2 max-h-80 overflow-y-auto pr-1"></div>
                 </div>
@@ -176,7 +171,7 @@
             <div id="pointsTab" class="tab-content hidden">
                 <h2 class="text-base font-bold mb-3">记分管理</h2>
                     <div class="mb-3">
-                        <label class="block muted mb-1 text-xs">选择用户</label>
+                        <label id="pointsTargetLabel" class="block muted mb-1 text-xs">当前用户</label>
                         <div id="pointsUserButtons" class="flex flex-wrap gap-2"></div>
                     </div>
 
@@ -202,18 +197,6 @@
                                 <button type="button" data-mode="set-current-chips">筹码</button>
                             </div>
                             <button onclick="performPointsAction('set_current', true)" class="bg-blue-500 text-white px-3 py-1 text-sm rounded">Set Current</button>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="block muted mb-1 text-xs">Win / Loss</label>
-                        <div class="flex flex-col sm:flex-row gap-2 mb-2 sm:items-center">
-                            <input type="text" inputmode="decimal" id="wlAmount" placeholder="金额" class="px-2 py-1 border rounded w-full sm:w-32 text-sm">
-                            <div id="targetUserButtons" class="flex flex-wrap gap-2"></div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="performWinLoss('win')" class="bg-green-600 text-white px-3 py-1 text-sm rounded">Win</button>
-                            <button onclick="performWinLoss('loss')" class="bg-red-600 text-white px-3 py-1 text-sm rounded">Loss</button>
                         </div>
                     </div>
 
@@ -306,7 +289,6 @@
                 <div class="mb-3 flex gap-2 items-center">
                     <button onclick="generateSeats()" id="generateSeatsBtn" class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600 hidden">生成座位</button>
                     <button onclick="refreshSeats()" class="bg-gray-500 text-white px-3 py-1 text-sm rounded hover:bg-gray-600">刷新座位</button>
-                    <button onclick="generateSeats()" id="redrawSeatsBtn" class="bg-purple-600 text-white px-3 py-1 text-sm rounded hidden">Redraw Seats</button>
                 </div>
 
                 <!-- Table container: moved down and responsive -->
@@ -442,17 +424,73 @@
                 </div>
             </div>
 
+            <!-- Squid penalty calculator -->
+            <div id="squidTab" class="tab-content hidden">
+                <h2 class="text-base font-bold mb-3">Squid 罚金计算</h2>
+                <div class="mobile-shell space-y-4">
+                    <div id="squidAdminControls" class="hidden space-y-4">
+                    <div class="glass-panel rounded-xl p-4">
+                        <h3 class="font-bold text-sm mb-3">基础罚金</h3>
+                        <label class="block text-xs">金额（元）
+                            <input id="squidBaseAmount" type="text" inputmode="decimal" value="1" class="mt-1 w-full px-3 py-2 text-sm">
+                        </label>
+                        <div id="squidExchangeRule" class="muted text-xs mt-2"></div>
+                    </div>
+                    <div class="glass-panel rounded-xl p-4">
+                        <h3 class="font-bold text-sm mb-3">达到条数时的倍率</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                            <label class="text-xs">第 3 条
+                                <input id="squidMultiplier3" type="number" min="0" step="any" value="2" class="mt-1 w-full px-3 py-2 text-sm">
+                            </label>
+                            <label class="text-xs">第 5 条
+                                <input id="squidMultiplier5" type="number" min="0" step="any" value="4" class="mt-1 w-full px-3 py-2 text-sm">
+                            </label>
+                            <label class="text-xs">第 7 条
+                                <input id="squidMultiplier7" type="number" min="0" step="any" value="6" class="mt-1 w-full px-3 py-2 text-sm">
+                            </label>
+                            <label class="text-xs">第 9 条
+                                <input id="squidMultiplier9" type="number" min="0" step="any" value="8" class="mt-1 w-full px-3 py-2 text-sm">
+                            </label>
+                            <label class="text-xs">第 11 条
+                                <input id="squidMultiplier11" type="number" min="0" step="any" value="10" class="mt-1 w-full px-3 py-2 text-sm">
+                            </label>
+                        </div>
+                        <button type="button" onclick="saveSquidSettings()" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold">保存罚金设置</button>
+                    </div>
+                    </div>
+                    <div id="squidReadOnlyConfig" class="glass-panel rounded-xl p-4 space-y-2"></div>
+                    <div class="glass-panel rounded-xl p-4">
+                        <label class="block text-xs mb-2">鱿鱼数量</label>
+                        <div class="flex gap-2">
+                            <input id="squidCount" type="number" min="0" step="1" placeholder="输入数量" class="w-full px-3 py-2 text-sm">
+                            <button type="button" onclick="calculateSquidPenalty()" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold">计算</button>
+                        </div>
+                        <div id="squidResult" class="mt-4 hidden rounded-xl metric-card p-4">
+                            <div id="squidTierResult" class="muted text-xs mb-2"></div>
+                            <div id="squidAmountResult" class="text-xl font-bold"></div>
+                            <div id="squidChipsResult" class="text-lg font-semibold text-blue-300 mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Admin Tab -->
             <div id="adminTab" class="tab-content hidden">
                 <h2 class="text-lg font-bold mb-3">管理员面板</h2>
                 <div class="mb-4 p-3 glass-panel rounded-lg">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
-                            <div class="text-xs muted mb-1">筹码比例</div>
-                            <div class="font-bold text-lg" id="adminChipRatioValue">1</div>
+                            <div class="text-xs muted mb-1">兑换规则（输入金额可兑换筹码）</div>
+                            <div class="font-bold text-lg" id="adminChipRatioValue">1.00 元 = 1.00 筹码</div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <input type="number" id="chipRatioInput" min="1" step="1" value="1" class="w-28 px-2 py-2 border rounded text-sm">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <label class="flex items-center gap-2 text-xs">金额（元）
+                                <input type="text" inputmode="decimal" id="exchangeAmountInput" value="1" class="w-28 px-2 py-2 border rounded text-sm">
+                            </label>
+                            <span class="muted">兑换为</span>
+                            <label class="flex items-center gap-2 text-xs">筹码
+                                <input type="text" inputmode="decimal" id="exchangeChipsInput" value="1" class="w-28 px-2 py-2 border rounded text-sm">
+                            </label>
                             <button onclick="updateChipRatio()" class="bg-blue-500 text-white px-3 py-2 rounded text-sm">保存</button>
                         </div>
                     </div>
@@ -480,15 +518,20 @@
         let currentUser = null;
         let websocket = null;
         let trendsChart = null;
-        let originalScores = [];
-        // stack of snapshots before each rebalance; pop to undo latest
-        let rebalanceStack = [];
-
-        let selectedTargetUser = null;
+        let selectedPointsUser = null;
         let currentChipRatio = 1;
+        let currentSquidSettings = { base_amount: 1, multipliers: { 3: 2, 5: 4, 7: 6, 9: 8, 11: 10 } };
         let leaderboardDisplayMode = 'amount';
         let currentBuyinMode = 'amount';
         let currentSetCurrentMode = 'amount';
+
+        function displayUsername(username) {
+            return String(username || '').toUpperCase();
+        }
+
+        function isPengUser() {
+            return Boolean(currentUser && currentUser.username.toLowerCase() === 'peng');
+        }
 
         function formatNumber(value) {
             const num = Number(value || 0);
@@ -503,7 +546,7 @@
             const num = Number(value || 0);
             if (!Number.isFinite(num)) return '0.00';
             if (mode === 'chips') {
-                return formatNumber(num * currentChipRatio);
+                return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.round(num * currentChipRatio));
             }
             return formatNumber(num);
         }
@@ -511,6 +554,10 @@
         function setLeaderboardNumber(element, value) {
             const formatted = formatDisplayValue(value);
             const decimalIndex = formatted.lastIndexOf('.');
+            if (decimalIndex === -1) {
+                element.textContent = formatted;
+                return;
+            }
             element.replaceChildren(document.createTextNode(formatted.slice(0, decimalIndex)));
             const decimal = document.createElement('span');
             decimal.className = 'leaderboard-decimal';
@@ -573,8 +620,8 @@
             const setInput = document.getElementById('setCurrentAmount');
             if (pointsInput) pointsInput.placeholder = currentBuyinMode === 'chips' ? '筹码' : '金额';
             if (setInput) setInput.placeholder = currentSetCurrentMode === 'chips' ? '筹码' : '金额';
-            formatNumericInput(pointsInput, currentBuyinMode === 'amount');
-            formatNumericInput(setInput, currentSetCurrentMode === 'amount');
+            formatNumericInput(pointsInput, true);
+            formatNumericInput(setInput, true);
         }
 
         function parseNumericInput(input) {
@@ -613,10 +660,133 @@
         function bindNumericInputFormatting() {
             const points = document.getElementById('pointsAmount');
             const setCurrent = document.getElementById('setCurrentAmount');
-            const winLoss = document.getElementById('wlAmount');
-            points?.addEventListener('input', () => formatNumericInput(points, currentBuyinMode === 'amount'));
-            setCurrent?.addEventListener('input', () => formatNumericInput(setCurrent, currentSetCurrentMode === 'amount'));
-            winLoss?.addEventListener('input', () => formatNumericInput(winLoss, true));
+            const exchangeAmount = document.getElementById('exchangeAmountInput');
+            const exchangeChips = document.getElementById('exchangeChipsInput');
+            const squidBaseAmount = document.getElementById('squidBaseAmount');
+            points?.addEventListener('input', () => formatNumericInput(points, true));
+            setCurrent?.addEventListener('input', () => formatNumericInput(setCurrent, true));
+            exchangeAmount?.addEventListener('input', () => formatNumericInput(exchangeAmount, true));
+            exchangeChips?.addEventListener('input', () => formatNumericInput(exchangeChips, true));
+            squidBaseAmount?.addEventListener('input', () => {
+                formatNumericInput(squidBaseAmount, true);
+                syncSquidSettingsFromInputs();
+            });
+            document.getElementById('squidCount')?.addEventListener('input', calculateSquidPenalty);
+            [3, 5, 7, 9, 11].forEach(threshold => {
+                document.getElementById(`squidMultiplier${threshold}`)?.addEventListener('input', syncSquidSettingsFromInputs);
+            });
+            document.getElementById('squidCount')?.addEventListener('keydown', event => {
+                if (event.key === 'Enter') calculateSquidPenalty();
+            });
+        }
+
+        function calculateSquidPenalty() {
+            const result = document.getElementById('squidResult');
+            const countInput = document.getElementById('squidCount');
+            const count = Number(countInput.value);
+            const baseAmount = Number(currentSquidSettings.base_amount);
+            if (countInput.value === '' || !Number.isInteger(count) || count < 0 || !Number.isFinite(baseAmount) || baseAmount < 0) {
+                result.classList.add('hidden');
+                return;
+            }
+
+            const thresholds = [3, 5, 7, 9, 11];
+            const reached = thresholds.filter(threshold => count >= threshold);
+            const threshold = reached.length ? reached[reached.length - 1] : null;
+            const multiplier = threshold ? Number(currentSquidSettings.multipliers[threshold]) : 1;
+            if (!Number.isFinite(multiplier) || multiplier < 0) {
+                result.classList.add('hidden');
+                return;
+            }
+            const amount = baseAmount * count * multiplier;
+            const chips = amount * currentChipRatio;
+            document.getElementById('squidTierResult').textContent = threshold
+                ? `达到第 ${threshold} 条门槛，按实际 ${count} 条 × ${formatNumber(multiplier)} 倍计算`
+                : `未达到第 3 条门槛，按实际 ${count} 条基础罚金计算`;
+            document.getElementById('squidAmountResult').textContent = `罚金：${formatNumber(amount)} 元`;
+            document.getElementById('squidChipsResult').textContent = `${formatNumber(chips)} 筹码`;
+            result.classList.remove('hidden');
+        }
+
+        function updateSquidConfigDisplay() {
+            const adminControls = document.getElementById('squidAdminControls');
+            const readOnly = document.getElementById('squidReadOnlyConfig');
+            const preview = document.getElementById('squidExchangeRule');
+            const isAdmin = isPengUser();
+            adminControls?.classList.toggle('hidden', !isAdmin);
+            if (readOnly) readOnly.classList.toggle('hidden', isAdmin);
+            const baseAmount = Number(currentSquidSettings.base_amount) || 0;
+            const baseChips = baseAmount * currentChipRatio;
+            const rule = `基础罚金：${formatNumber(baseAmount)} 元 = ${formatNumber(baseChips)} 筹码`;
+            if (preview) preview.textContent = `自动换算：${formatNumber(baseChips)} 筹码（当前兑换规则）`;
+            if (readOnly) {
+                readOnly.replaceChildren();
+                const base = document.createElement('div');
+                base.className = 'font-bold';
+                base.textContent = rule;
+                readOnly.appendChild(base);
+                [3, 5, 7, 9, 11].forEach(threshold => {
+                    const line = document.createElement('div');
+                    line.className = 'text-sm muted';
+                    line.textContent = `第 ${threshold} 条：${formatNumber(currentSquidSettings.multipliers[threshold])} 倍`;
+                    readOnly.appendChild(line);
+                });
+            }
+        }
+
+        function syncSquidSettingsFromInputs() {
+            if (!isPengUser()) return false;
+            const baseAmount = parseNumericInput(document.getElementById('squidBaseAmount'));
+            const multipliers = {};
+            for (const threshold of [3, 5, 7, 9, 11]) {
+                multipliers[threshold] = Number(document.getElementById(`squidMultiplier${threshold}`).value);
+            }
+            if (!Number.isFinite(baseAmount) || baseAmount <= 0 || Object.values(multipliers).some(value => !Number.isFinite(value) || value < 0)) return false;
+            currentSquidSettings = { base_amount: baseAmount, multipliers };
+            updateSquidConfigDisplay();
+            calculateSquidPenalty();
+            return true;
+        }
+
+        async function loadSquidSettings() {
+            try {
+                const response = await fetch('/api/squid_settings');
+                const data = await response.json();
+                currentSquidSettings = {
+                    base_amount: Number(data.base_amount) || 1,
+                    multipliers: Object.fromEntries([3, 5, 7, 9, 11].map(t => [t, Number(data.multipliers?.[String(t)])]))
+                };
+                for (const threshold of [3, 5, 7, 9, 11]) {
+                    if (!Number.isFinite(currentSquidSettings.multipliers[threshold])) currentSquidSettings.multipliers[threshold] = ({ 3: 2, 5: 4, 7: 6, 9: 8, 11: 10 })[threshold];
+                    const input = document.getElementById(`squidMultiplier${threshold}`);
+                    if (input) input.value = String(currentSquidSettings.multipliers[threshold]);
+                }
+                const amountInput = document.getElementById('squidBaseAmount');
+                if (amountInput) {
+                    amountInput.value = String(currentSquidSettings.base_amount);
+                    formatNumericInput(amountInput, true);
+                }
+                updateSquidConfigDisplay();
+                calculateSquidPenalty();
+            } catch (error) {
+                console.error('读取 Squid 设置失败', error);
+            }
+        }
+
+        async function saveSquidSettings() {
+            if (!isPengUser()) return;
+            if (!syncSquidSettingsFromInputs()) {
+                alert('请填写有效的基础金额和全部倍率');
+                return;
+            }
+            const response = await fetch('/api/squid_settings', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_user: currentUser.username, ...currentSquidSettings })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) { alert(data.message || '保存 Squid 设置失败'); return; }
+            await loadSquidSettings();
+            alert('Squid 罚金设置已保存');
         }
 
         function addActivityLog(message) {
@@ -650,7 +820,7 @@
                     details.className = 'min-w-0';
                     const who = document.createElement('div');
                     who.className = 'font-semibold truncate';
-                    who.textContent = item.username;
+                    who.textContent = displayUsername(item.username);
                     const when = document.createElement('div');
                     when.className = 'muted mt-1';
                     when.textContent = item.created_at || '';
@@ -662,7 +832,7 @@
                     cash.textContent = `¥${formatNumber(item.amount)}`;
                     const chips = document.createElement('div');
                     chips.className = 'muted mt-1';
-                    chips.textContent = `${formatNumber(item.chips)} 筹码 · 比例 ${formatNumber(item.ratio)}`;
+                    chips.textContent = `${formatNumber(item.chips)} 筹码`;
                     values.append(cash, chips);
                     row.append(details, values);
                     list.appendChild(row);
@@ -676,14 +846,29 @@
             try {
                 const response = await fetch('/api/settings');
                 const data = await response.json();
-                currentChipRatio = Number(data.chip_ratio) > 0 ? Number(data.chip_ratio) : 1;
+                const exchangeAmount = Number(data.exchange_amount) > 0 ? Number(data.exchange_amount) : 1;
+                const exchangeChips = Number(data.exchange_chips) > 0 ? Number(data.exchange_chips) : (Number(data.chip_ratio) || 1);
+                currentChipRatio = exchangeChips / exchangeAmount;
                 const status = document.getElementById('statusChipRatioLabel');
                 const adminValue = document.getElementById('adminChipRatioValue');
-                const input = document.getElementById('chipRatioInput');
-                if (status) status.textContent = formatNumber(currentChipRatio);
-                if (adminValue) adminValue.textContent = formatNumber(currentChipRatio);
-                if (input) input.value = String(currentChipRatio);
+                const amountInput = document.getElementById('exchangeAmountInput');
+                const chipsInput = document.getElementById('exchangeChipsInput');
+                const ruleText = `${formatNumber(exchangeAmount)} 元 = ${formatNumber(exchangeChips)} 筹码`;
+                const squidRule = document.getElementById('squidExchangeRule');
+                if (status) status.textContent = ruleText;
+                if (adminValue) adminValue.textContent = ruleText;
+                if (squidRule) squidRule.textContent = `筹码按当前兑换规则自动计算：${ruleText}`;
+                if (amountInput) {
+                    amountInput.value = String(exchangeAmount);
+                    formatNumericInput(amountInput, true);
+                }
+                if (chipsInput) {
+                    chipsInput.value = String(exchangeChips);
+                    formatNumericInput(chipsInput, true);
+                }
+                updateSquidConfigDisplay();
                 loadLeaderboard();
+                calculateSquidPenalty();
             } catch (error) {
                 console.error('读取筹码比例失败', error);
             }
@@ -691,22 +876,26 @@
 
         async function updateChipRatio() {
             if (!currentUser) return;
-            const ratio = Number(document.getElementById('chipRatioInput').value);
-            if (!Number.isFinite(ratio) || ratio <= 0) {
-                alert('筹码比例必须大于 0');
+            const amount = parseNumericInput(document.getElementById('exchangeAmountInput'));
+            const chips = parseNumericInput(document.getElementById('exchangeChipsInput'));
+            if (!Number.isFinite(amount) || !Number.isFinite(chips) || amount <= 0 || chips <= 0) {
+                alert('兑换金额和筹码数必须大于 0');
                 return;
             }
             const response = await fetch('/api/settings', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ admin_user: currentUser.username, chip_ratio: ratio })
+                body: JSON.stringify({ admin_user: currentUser.username, exchange_amount: amount, exchange_chips: chips })
             });
             const data = await response.json();
             if (!data.success) { alert(data.message || '保存失败'); return; }
-            currentChipRatio = ratio;
-            document.getElementById('adminChipRatioValue').textContent = formatNumber(ratio);
-            document.getElementById('statusChipRatioLabel').textContent = formatNumber(ratio);
+            currentChipRatio = data.chip_ratio;
+            const ruleText = `${formatNumber(data.exchange_amount)} 元 = ${formatNumber(data.exchange_chips)} 筹码`;
+            document.getElementById('adminChipRatioValue').textContent = ruleText;
+            document.getElementById('statusChipRatioLabel').textContent = ruleText;
+            updateSquidConfigDisplay();
+            calculateSquidPenalty();
             loadLeaderboard();
-            addActivityLog(`筹码比例已更新为 ${formatNumber(ratio)}`);
+            addActivityLog(`兑换规则已更新为 ${ruleText}`);
         }
 
         async function loadOnlineUsers() {
@@ -719,13 +908,10 @@
                 (data.users || []).forEach(user => {
                     const card = document.createElement('div');
                     card.className = 'online-card glass-panel rounded-xl p-3 text-center';
-                    const avatar = document.createElement('div');
-                    avatar.className = 'text-3xl mb-1';
-                    avatar.textContent = user.avatar && !user.avatar.includes('.') ? user.avatar : '🙂';
                     const name = document.createElement('div');
                     name.className = 'text-xs truncate';
-                    name.textContent = user.username;
-                    card.append(avatar, name);
+                    name.textContent = displayUsername(user.username);
+                    card.appendChild(name);
                     container.appendChild(card);
                 });
             } catch (error) { console.error('加载用户失败', error); }
@@ -736,24 +922,38 @@
                 const response = await fetch('/api/users');
                 const data = await response.json();
                 const actor = document.getElementById('pointsUserButtons');
-                const targets = document.getElementById('targetUserButtons');
                 actor.innerHTML = '';
-                targets.innerHTML = '';
-                const badge = document.createElement('span');
-                badge.className = 'px-3 py-2 rounded-lg glass-panel';
-                badge.textContent = currentUser ? currentUser.username : '未登录';
-                actor.appendChild(badge);
-                (data.users || []).filter(user => user.username !== (currentUser && currentUser.username)).forEach(user => {
+                const adminCanChoose = Boolean(currentUser && currentUser.username.toLowerCase() === 'peng');
+                const users = data.users || [];
+                const selectableUsers = adminCanChoose
+                    ? users
+                    : users.filter(user => user.username.toUpperCase() === currentUser?.username.toUpperCase());
+                if (!selectableUsers.length && currentUser) selectableUsers.push({ username: currentUser.username });
+                document.getElementById('pointsTargetLabel').textContent = adminCanChoose ? '选择玩家' : '当前用户（仅可操作本人）';
+                if (!selectableUsers.some(user => user.username.toUpperCase() === (selectedPointsUser || '').toUpperCase())) {
+                    selectedPointsUser = adminCanChoose
+                        ? (selectableUsers.find(user => user.username.toLowerCase() === 'peng')?.username || selectableUsers[0]?.username)
+                        : currentUser?.username;
+                }
+                selectableUsers.forEach(user => {
+                    if (!adminCanChoose) {
+                        const badge = document.createElement('span');
+                        badge.className = 'px-3 py-2 rounded-lg glass-panel text-xs';
+                        badge.textContent = displayUsername(user.username);
+                        actor.appendChild(badge);
+                        return;
+                    }
                     const button = document.createElement('button');
                     button.type = 'button';
-                    button.className = 'px-3 py-2 rounded-lg glass-panel text-xs';
-                    button.textContent = user.username;
+                    button.className = 'points-user-choice px-3 py-2 rounded-lg glass-panel text-xs border border-transparent';
+                    button.textContent = displayUsername(user.username);
+                    button.classList.toggle('active', user.username.toUpperCase() === selectedPointsUser?.toUpperCase());
                     button.onclick = () => {
-                        selectedTargetUser = user.username;
-                        targets.querySelectorAll('button').forEach(el => el.classList.remove('active'));
+                        selectedPointsUser = user.username;
+                        actor.querySelectorAll('button').forEach(el => el.classList.remove('active'));
                         button.classList.add('active');
                     };
-                    targets.appendChild(button);
+                    actor.appendChild(button);
                 });
             } catch (error) { console.error('加载记分用户失败', error); }
         }
@@ -772,7 +972,7 @@
                     sums.win_loss += Number(score.win_loss || 0);
                     const row = document.createElement('tr');
                     row.innerHTML = `<td></td><td></td><td></td><td></td><td></td>`;
-                    row.cells[0].textContent = score.player;
+                    row.cells[0].textContent = displayUsername(score.player);
                     setLeaderboardNumber(row.cells[1], score.brought);
                     setLeaderboardNumber(row.cells[2], score.current);
                     setLeaderboardNumber(row.cells[3], score.win_loss);
@@ -795,40 +995,60 @@
             } catch (error) { console.error('加载排行榜失败', error); }
         }
 
+        async function rebalanceScores() {
+            try {
+                const response = await fetch('/api/rebalance', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ count: 1000000 })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || '重新平衡失败');
+                await loadLeaderboard();
+                alert(data.message || '已完成重新平衡');
+            } catch (error) {
+                console.error('重新平衡失败', error);
+                alert(error.message || '重新平衡失败');
+            }
+        }
+
+        async function revertRebalance() {
+            try {
+                const response = await fetch('/api/rebalance/undo', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || '撤销平衡失败');
+                await loadLeaderboard();
+                alert(data.message || '已撤销最近一次平衡');
+            } catch (error) {
+                console.error('撤销平衡失败', error);
+                alert(error.message || '撤销平衡失败');
+            }
+        }
+
         async function performPointsAction(action, isSetCurrent = false) {
             if (!currentUser) { alert('请先登录'); return; }
+            const targetUsername = currentUser.username.toLowerCase() === 'peng' ? selectedPointsUser : currentUser.username;
+            if (!targetUsername) { alert('请选择玩家'); return; }
             const input = (action === 'set_current' || isSetCurrent) ? document.getElementById('setCurrentAmount') : document.getElementById('pointsAmount');
             const amount = parseNumericInput(input);
             const mode = (action === 'set_current' || isSetCurrent) ? currentSetCurrentMode : currentBuyinMode;
             if (!Number.isFinite(amount) || amount < 0) { alert('请输入有效金额'); return; }
             const response = await fetch('/api/update_score', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: currentUser.username, action, amount, mode })
+                body: JSON.stringify({ username: targetUsername, action, amount, mode })
             });
             const data = await response.json();
             if (!data.success) { alert(data.message || '操作失败'); return; }
             input.value = '';
             input.dispatchEvent(new Event('input', { bubbles: true }));
-            addActivityLog(`${currentUser.username} ${action} ${formatNumber(amount)} ${mode === 'chips' ? '筹码' : '金额'}`);
+            addActivityLog(`${displayUsername(currentUser.username)} 为 ${displayUsername(targetUsername)} 执行 ${action} ${formatNumber(amount)} ${mode === 'chips' ? '筹码' : '金额'}`);
             loadLeaderboard();
             loadBuyinLogs();
         }
 
-        async function performWinLoss(action) {
-            if (!currentUser || !selectedTargetUser) { alert('请选择目标用户'); return; }
-            const amount = parseNumericInput(document.getElementById('wlAmount'));
-            if (!Number.isFinite(amount) || amount <= 0) { alert('请输入有效金额'); return; }
-            const response = await fetch('/api/update_score', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: currentUser.username, action, amount, target_user: selectedTargetUser })
-            });
-            const data = await response.json();
-            if (!data.success) { alert(data.message || '操作失败'); return; }
-            document.getElementById('wlAmount').value = '';
-            loadLeaderboard();
-        }
-
         function switchTab(name) {
+            if (name === 'admin' && !isPengUser()) return;
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
             document.querySelectorAll('nav .tab-btn').forEach(button => button.classList.remove('active'));
             const target = document.getElementById(`${name}Tab`);
@@ -838,7 +1058,9 @@
             if (name === 'status') { loadOnlineUsers(); loadBuyinLogs(); }
             if (name === 'points') loadUsersForPoints();
             if (name === 'leaderboard') loadLeaderboard();
+            if (name === 'seats') refreshSeats();
             if (name === 'admin') loadChipRatio();
+            if (name === 'squid') loadSquidSettings();
         }
 
         function loadAllData() {
@@ -847,6 +1069,93 @@
             loadLeaderboard();
             loadBuyinLogs();
             loadChipRatio();
+            loadSquidSettings();
+        }
+
+        function renderSeats(data) {
+            const container = document.getElementById('seatsContainer');
+            if (!container) return;
+            container.replaceChildren();
+            const seats = Array.isArray(data) ? data : (data?.seats || []);
+            seats.forEach((seat, index) => {
+                const angle = Number.isFinite(Number(seat.angle)) ? Number(seat.angle) : (2 * Math.PI * index / Math.max(seats.length, 1) - Math.PI / 2);
+                const marker = document.createElement('div');
+                marker.className = 'absolute -translate-x-1/2 -translate-y-1/2 rounded-lg border border-blue-400/50 bg-slate-900 px-2 py-1 text-xs font-semibold shadow-lg whitespace-nowrap';
+                marker.style.left = `${50 + Math.cos(angle) * 46}%`;
+                marker.style.top = `${50 + Math.sin(angle) * 42}%`;
+                marker.textContent = `${seat.seat || index + 1}. ${displayUsername(seat.username)}`;
+                container.appendChild(marker);
+            });
+        }
+
+        async function refreshSeats() {
+            try {
+                const response = await fetch('/api/seats');
+                const data = await response.json();
+                renderSeats(data);
+            } catch (error) {
+                console.error('读取座位失败', error);
+                alert('读取座位失败，请稍后重试');
+            }
+        }
+
+        async function generateSeats() {
+            if (!isPengUser()) return;
+            try {
+                const response = await fetch('/api/generate_seats', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_user: currentUser.username })
+                });
+                const data = await response.json();
+                if (!response.ok || data.success === false) throw new Error(data.message || '生成座位失败');
+                renderSeats(data);
+            } catch (error) {
+                console.error('生成座位失败', error);
+                alert(error.message || '生成座位失败，请稍后重试');
+            }
+        }
+
+        async function createNewSession() {
+            if (!currentUser) { alert('请先登录'); return; }
+            const defaultName = `Session ${new Date().toLocaleString()}`;
+            const name = window.prompt('请输入新游戏会话名称', defaultName);
+            if (name === null) return;
+            try {
+                const sessionName = name.trim() || defaultName;
+                const response = await fetch('/api/new_session', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_user: currentUser.username, name: sessionName })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || '新建会话失败');
+                loadAllData();
+                addActivityLog(`已新建游戏会话：${sessionName}`);
+                alert('新游戏会话已创建');
+            } catch (error) {
+                console.error('新建游戏会话失败', error);
+                alert(error.message || '新建会话失败，请确认管理员权限');
+            }
+        }
+
+        async function resetAllData() {
+            if (!currentUser) { alert('请先登录'); return; }
+            const confirmed = window.confirm('此操作会删除所有用户、积分、Buy-in 日志和会话数据，且无法撤销。确定继续吗？');
+            if (!confirmed) return;
+            try {
+                const response = await fetch('/api/reset_all', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_user: currentUser.username })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || '清空数据失败');
+                if (websocket) websocket.close();
+                localStorage.removeItem('currentUser');
+                alert(data.message || '数据已清空，请重新注册管理员账号');
+                window.location.reload();
+            } catch (error) {
+                console.error('清空数据失败', error);
+                alert(error.message || '清空数据失败，请确认管理员权限');
+            }
         }
 
         function initWebSocket() {
@@ -862,7 +1171,10 @@
                         currentChipRatio = Number(message.chip_ratio) || 1;
                         loadChipRatio();
                     }
+                    if (message.type === 'squid_settings_changed') loadSquidSettings();
                     if (message.type === 'user_status') loadOnlineUsers();
+                    if (message.type === 'seats_update') renderSeats(message);
+                    if (message.type === 'system_reset') window.location.reload();
                 } catch (error) { console.error('处理实时更新失败', error); }
             };
         }
@@ -887,7 +1199,6 @@
             loadOnlineUsers();
             loadUsersForPoints();
             loadLeaderboard();
-            loadTrends();
             refreshSeats();
             loadBuyinLogs();
             loadChipRatio();
@@ -905,9 +1216,6 @@
             if (registerForm) registerForm.classList.toggle('hidden', !isRegister);
             if (authTitle) authTitle.textContent = isRegister ? '注册' : '登录';
 
-            if (isRegister) {
-                loadAvatarPicker();
-            }
         }
 
         async function login() {
@@ -930,21 +1238,10 @@
 
                     document.getElementById('authModal').classList.add('hidden');
                     document.getElementById('mainApp').classList.remove('hidden');
-                    document.getElementById('currentUser').textContent = `当前用户: ${currentUser.username}`;
+                    document.getElementById('currentUser').textContent = `当前用户: ${displayUsername(currentUser.username)}`;
 
-                    const av = document.getElementById('currentAvatar');
-                    if (currentUser.avatar && currentUser.avatar.indexOf('.') > -1) {
-                        av.innerHTML = `<img src="/static/${currentUser.avatar}" class="w-8 h-8 rounded-full object-cover"/>`;
-                    } else {
-                        av.textContent = currentUser.avatar || '';
-                    }
-                    document.getElementById('changeAvatarBtn').classList.remove('hidden');
-
-                    if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
+                    if (isPengUser()) {
                         document.getElementById('adminTabBtn').classList.remove('hidden');
-                        document.getElementById('generateSeatsBtn').classList.remove('hidden');
-                    }
-                    if (currentUser.username.toLowerCase() === 'mj') {
                         document.getElementById('generateSeatsBtn').classList.remove('hidden');
                     }
 
@@ -960,15 +1257,10 @@
         }
 
         async function register() {
-            const username = document.getElementById('regUsername').value.trim();
-            const avatar = document.getElementById('regAvatar').value;
+            const username = document.getElementById('regUsername').value.trim().toUpperCase();
 
             if (!username) {
                 alert('请输入用户名');
-                return;
-            }
-            if (!avatar || avatar === 'default_avatar.png') {
-                alert('请选择一个头像');
                 return;
             }
 
@@ -976,7 +1268,7 @@
                 const response = await fetch('/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, avatar })
+                    body: JSON.stringify({ username })
                 });
                 const data = await response.json();
                 if (data.success) {
@@ -988,36 +1280,6 @@
             } catch (error) {
                 console.error('register failed', error);
                 alert('注册失败，请稍后重试');
-            }
-        }
-
-        async function loadAvatarPicker() {
-            try {
-                const resp = await fetch('/api/avatars');
-                const data = await resp.json();
-                const picker = document.getElementById('avatarPicker');
-                if (!picker) return;
-                picker.innerHTML = '';
-                const taken = new Set(data.taken || []);
-                (data.all || []).forEach(emoji => {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'w-10 h-10 text-2xl flex items-center justify-center rounded';
-                    btn.textContent = emoji;
-                    if (taken.has(emoji)) {
-                        btn.classList.add('opacity-40', 'cursor-not-allowed');
-                        btn.disabled = true;
-                    }
-                    btn.addEventListener('click', () => {
-                        if (btn.disabled) return;
-                        document.getElementById('regAvatar').value = emoji;
-                        picker.querySelectorAll('button').forEach(b => b.classList.remove('ring', 'ring-2', 'ring-blue-400'));
-                        btn.classList.add('ring', 'ring-2', 'ring-blue-400');
-                    });
-                    picker.appendChild(btn);
-                });
-            } catch (e) {
-                console.error('加载头像列表失败', e);
             }
         }
 
@@ -1043,19 +1305,9 @@
             if (storedUser) {
                 document.getElementById('authModal').classList.add('hidden');
                 document.getElementById('mainApp').classList.remove('hidden');
-                document.getElementById('currentUser').textContent = `当前用户: ${currentUser.username}`;
-                const av = document.getElementById('currentAvatar');
-                if (currentUser.avatar && currentUser.avatar.indexOf('.') > -1) {
-                    av.innerHTML = `<img src="/static/${currentUser.avatar}" class="w-8 h-8 rounded-full object-cover"/>`;
-                } else {
-                    av.textContent = currentUser.avatar || '';
-                }
-                document.getElementById('changeAvatarBtn').classList.remove('hidden');
-                if (currentUser.is_admin || currentUser.username.toLowerCase() === 'peng') {
+                document.getElementById('currentUser').textContent = `当前用户: ${displayUsername(currentUser.username)}`;
+                if (isPengUser()) {
                     document.getElementById('adminTabBtn').classList.remove('hidden');
-                    document.getElementById('generateSeatsBtn').classList.remove('hidden');
-                }
-                if (currentUser.username.toLowerCase() === 'mj') {
                     document.getElementById('generateSeatsBtn').classList.remove('hidden');
                 }
                 initWebSocket();
