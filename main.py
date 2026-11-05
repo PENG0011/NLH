@@ -573,6 +573,7 @@ async def api_get_settings():
 def read_squid_settings() -> dict:
     return {
         "base_amount": float(get_setting("squid_base_amount", "1") or 1),
+        "max_count": int(float(get_setting("squid_max_count", "11") or 11)),
         "multipliers": {
             str(threshold): float(get_setting(f"squid_multiplier_{threshold}", str(default)) or default)
             for threshold, default in ((3, 2), (5, 4), (7, 6), (9, 8), (11, 10))
@@ -595,16 +596,18 @@ async def api_update_squid_settings(request: Request):
         return JSONResponse({"success": False, "message": "只有 PENG 可以设置 Squid 罚金"}, status_code=403)
     try:
         base_amount = float(payload.get('base_amount'))
+        max_count = int(payload.get('max_count', 11))
         multipliers = payload.get('multipliers') or {}
         parsed = {str(t): float(multipliers[str(t)]) for t in (3, 5, 7, 9, 11)}
     except (TypeError, ValueError, KeyError):
         return JSONResponse({"success": False, "message": "请填写有效的基础金额和全部倍率"})
-    if not math.isfinite(base_amount) or base_amount <= 0 or any(not math.isfinite(value) or value < 0 for value in parsed.values()):
+    if not math.isfinite(base_amount) or base_amount <= 0 or not 1 <= max_count <= 100 or any(not math.isfinite(value) or value < 0 for value in parsed.values()):
         return JSONResponse({"success": False, "message": "基础金额必须大于 0，倍率不能小于 0"})
     set_setting("squid_base_amount", str(base_amount))
+    set_setting("squid_max_count", str(max_count))
     for threshold, multiplier in parsed.items():
         set_setting(f"squid_multiplier_{threshold}", str(multiplier))
-    settings = {"base_amount": base_amount, "multipliers": parsed, "base_chips": base_amount * get_chip_ratio()}
+    settings = {"base_amount": base_amount, "max_count": max_count, "multipliers": parsed, "base_chips": base_amount * get_chip_ratio()}
     await manager.broadcast({"type": "squid_settings_changed", **settings})
     return {"success": True, **settings}
 

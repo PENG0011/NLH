@@ -66,6 +66,7 @@ python -c "import fastapi; print('FastAPI version:', fastapi.__version__)"
 #### Option 1: Development Mode (with auto-reload)
 ```bash
 python main.py
+chmod +x restart.sh && ./restart.sh 8000
 ```
 
 The server will start at `http://localhost:8000`
