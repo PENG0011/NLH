@@ -10,21 +10,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style> 
         :root{
-            --bg:#0f1419;
-            --card:#1a2332;
-            --muted:#7c8894;
-            --accent:#3b82f6;
+            --bg:#07130f;
+            --card:#10251c;
+            --muted:#8ca79a;
+            --accent:#d9b66f;
             --glass: rgba(255,255,255,0.04);
-            --text-primary:#f0f4f8;
-            --text-secondary:#cbd5e1;
+            --text-primary:#f5f1e6;
+            --text-secondary:#d6e2d8;
         }
         html,body{height:100%;font-size:14px;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;font-weight:500}
-        body{background:linear-gradient(180deg,var(--bg),#0a0e14);color:var(--text-primary);margin:0}
-        .app-card{background:linear-gradient(135deg,var(--card),#141d2a);box-shadow:0 8px 24px rgba(0,0,0,0.8);border:1px solid rgba(59,130,246,0.1)}
+        body{background:radial-gradient(ellipse at 50% -20%,#1d4933 0%,transparent 55%),linear-gradient(180deg,var(--bg),#08110d);color:var(--text-primary);margin:0}
+        .app-card{background:linear-gradient(145deg,rgba(16,37,28,.98),rgba(10,25,19,.98));box-shadow:0 16px 40px rgba(0,0,0,.38);border:1px solid rgba(217,182,111,.16)}
         .muted{color:var(--muted)}
-        .tab-btn{padding:10px 16px;font-size:13px;font-weight:600;border-radius:12px;background:transparent;color:var(--muted);border:1px solid transparent;transition:all 0.2s}
-        .tab-btn:hover{color:var(--text-primary);background:rgba(59,130,246,0.1);transform:translateY(-2px)}
-        .tab-btn.active{background:linear-gradient(135deg, rgba(59,130,246,0.25), rgba(59,130,246,0.1));color:#3b82f6;border-color:rgba(59,130,246,0.4);box-shadow:0 4px 12px rgba(59,130,246,0.15)}
+        .tab-btn{padding:10px 15px;font-size:13px;font-weight:700;border-radius:999px;background:rgba(255,255,255,.035);color:var(--muted);border:1px solid rgba(255,255,255,.06);transition:all .2s;white-space:nowrap}
+        .tab-btn:hover{color:var(--text-primary);background:rgba(217,182,111,.1)}
+        .tab-btn.active{background:linear-gradient(135deg,#e2c782,#bd9852);color:#17241b;border-color:rgba(255,235,180,.5);box-shadow:0 5px 16px rgba(190,153,79,.2)}
         .coin{width:96px;height:96px;perspective:1000px}
         .coin-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 1s}
         .coin-face{position:absolute;inset:0;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:800;font-size:20px}
@@ -42,36 +42,61 @@
         input::placeholder{color:#7c8894}
         input:focus,textarea:focus,select:focus{outline:none;border-color:rgba(59,130,246,0.5);box-shadow:0 0 0 3px rgba(59,130,246,0.1)}
 
-        .leaderboard-table-container{width:100%;overflow:hidden;margin-top:0.5rem;}
-        .leaderboard-table-container::-webkit-scrollbar{display:none}
-        .leaderboard-table-container{-ms-overflow-style:none;scrollbar-width:none}
+        .leaderboard-table-container{width:100%;overflow:hidden;margin-top:0.5rem;border:1px solid rgba(217,182,111,.15);border-radius:18px;background:rgba(5,17,12,.55)}
         #leaderboardTable{width:100%;border-collapse:collapse;table-layout:fixed}
-        #leaderboardTable th,#leaderboardTable td{padding:0.75rem 0.5rem;text-align:right;border-bottom:1px solid rgba(59,130,246,0.15);font-size:1.8rem;line-height:1.1;font-weight:600}
+        #leaderboardTable th,#leaderboardTable td{padding:0.5rem 0.3rem;text-align:right;border-bottom:1px solid rgba(217,182,111,.1);font-size:clamp(1rem,2vw,1.75rem);line-height:1.12;font-weight:700}
         #leaderboardTable th:first-child,#leaderboardTable td:first-child{text-align:left;}
-        #leaderboardTable th{font-weight:700;color:var(--muted);letter-spacing:.02em;text-transform:uppercase;word-break:break-word}
-        #leaderboardTable tbody tr:hover{background:rgba(59,130,246,0.08);}
-        #leaderboardTable tfoot td{font-weight:700;border-top:2px solid rgba(59,130,246,0.2);color:var(--text-primary)}
-        #leaderboardTable td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        #leaderboardTable td:first-child{white-space:normal}
+        #leaderboardTable th{font-weight:700;color:var(--muted);letter-spacing:-.04em;text-transform:uppercase;white-space:nowrap;font-size:clamp(.43rem,.65vw,.58rem);line-height:1.05;padding-left:.08rem;padding-right:.08rem}
+        #leaderboardTable tbody tr:hover{background:rgba(217,182,111,.06);}
+        #leaderboardTable tbody td:first-child{color:#e6cc8d;font-weight:800}
+        #leaderboardTable tfoot td{font-weight:800;border-top:2px solid rgba(217,182,111,.24);color:var(--text-primary);background:rgba(217,182,111,.05)}
+        #leaderboardTable td:first-child{white-space:nowrap;overflow:hidden;text-overflow:clip}
+        #leaderboardTable td:not(:first-child){white-space:nowrap;overflow:hidden;text-overflow:clip;overflow-wrap:normal;word-break:keep-all;font-size:clamp(.88rem,1.76vw,1.59rem);font-variant-numeric:tabular-nums;letter-spacing:-.055em}
         .leaderboard-decimal{font-size:30%;font-weight:600;vertical-align:baseline}
-        @media (max-width: 720px){
-            #leaderboardTable th,#leaderboardTable td{padding:0.5rem 0.2rem;font-size:0.85rem}
-        }
+        #leaderboardFullscreenOverlay{display:none;position:fixed;inset:0;z-index:10000;background:linear-gradient(145deg,#07130f,#10251c);overflow:auto;padding:8px}
+        #leaderboardFullscreenOverlay.active{display:block}
+        #leaderboardFullscreenOverlay .leaderboard-table-container{width:100%;height:100%;overflow:auto;margin:0;border-radius:0}
+        #leaderboardFullscreenOverlay #leaderboardTable{width:100%;min-width:100%;height:100%;table-layout:fixed}
+        #leaderboardFullscreenOverlay #leaderboardTable th,#leaderboardFullscreenOverlay #leaderboardTable td{font-size:clamp(1.1rem,2.5vw,2.2rem);padding:clamp(.5rem,1.5vh,1.1rem) clamp(.4rem,1vw,1rem)}
+        #leaderboardFullscreenOverlay #leaderboardTable th{font-size:clamp(.7rem,1.1vw,1rem)}
+        #leaderboardFullscreenOverlay #leaderboardTable td:not(:first-child){font-size:clamp(1rem,2.3vw,2rem)}
+        #leaderboardFullscreenOverlay #leaderboardFullscreenBtn{position:fixed;right:10px;top:10px;z-index:1}
+        body.leaderboard-is-fullscreen{overflow:hidden}
+        .poker-button{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;min-height:44px;padding:.65rem 1rem;border:1px solid rgba(244,220,159,.32);border-radius:14px;background:linear-gradient(145deg,#d8ba70,#b69048);color:#17251c;font-size:.9rem;font-weight:800;box-shadow:inset 0 1px rgba(255,255,255,.28),0 5px 14px rgba(0,0,0,.2);transition:transform .15s,filter .15s}
+        .poker-button:hover{filter:brightness(1.08);transform:translateY(-1px)}
+        .poker-button:active{transform:translateY(1px);filter:brightness(.96)}
+        .poker-button.secondary{background:linear-gradient(145deg,#214b35,#153524);color:#e5d5a6;border-color:rgba(217,182,111,.28)}
+        .poker-button.danger{background:linear-gradient(145deg,#9d513e,#713829);color:#fff2e9;border-color:rgba(255,202,175,.22)}
+        .poker-button.positive{background:linear-gradient(145deg,#d8ba70,#b69048)}
+        .poker-brand-mark{position:relative;width:38px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:linear-gradient(145deg,#fff9e9,#e8dfc6);color:#a23d32;font-family:Georgia,serif;font-size:23px;font-weight:800;transform:rotate(-6deg);box-shadow:0 5px 12px rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.6)}
+        .poker-brand-mark:after{content:'♠';position:absolute;right:4px;bottom:1px;font-size:11px;color:#1b3827}
 
-        .table-ellipse{background:linear-gradient(180deg,#0f2c1f,#0a1f15);border:2px solid rgba(59,130,246,0.2);border-radius:9999px}
+        .table-ellipse{background:linear-gradient(180deg,#145533,#0b2a1b);border:3px solid rgba(217,182,111,.55);border-radius:9999px;box-shadow:inset 0 0 0 5px rgba(217,182,111,.08),0 10px 30px rgba(0,0,0,.25)}
 
         .mobile-shell{max-width:420px;margin:0 auto}
-        .glass-panel{background:linear-gradient(135deg, rgba(15,23,36,0.96), rgba(30,41,59,0.88));border:1px solid rgba(148,163,184,0.18);box-shadow:0 18px 50px rgba(15,23,42,0.35)}
-        .metric-card{backdrop-filter:blur(8px);background:linear-gradient(135deg, rgba(59,130,246,0.16), rgba(15,23,42,0.2));border:1px solid rgba(148,163,184,0.08)}
+        .glass-panel{background:linear-gradient(145deg,rgba(17,44,32,.96),rgba(11,29,21,.92));border:1px solid rgba(217,182,111,.16);box-shadow:0 12px 30px rgba(0,0,0,.2)}
+        .metric-card{backdrop-filter:blur(8px);background:linear-gradient(135deg,rgba(217,182,111,.12),rgba(10,33,22,.45));border:1px solid rgba(217,182,111,.18)}
         .segmented{display:inline-flex;background:rgba(15,23,42,0.8);padding:4px;border-radius:999px;border:1px solid rgba(148,163,184,0.15)}
         .segmented button{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;color:var(--muted);transition:all .2s}
-        .segmented button.active{background:linear-gradient(135deg,#3b82f6,#60a5fa);color:white;box-shadow:0 8px 18px rgba(59,130,246,0.32)}
-        .points-user-choice.active{background:linear-gradient(135deg,#3b82f6,#60a5fa);color:#fff;border-color:rgba(96,165,250,.65)}
+        .segmented button.active{background:linear-gradient(135deg,#e2c782,#bd9852);color:#17241b;box-shadow:0 5px 15px rgba(190,153,79,.2)}
+        .points-user-choice.active{background:linear-gradient(135deg,#e2c782,#bd9852);color:#17241b;border-color:rgba(255,235,180,.65)}
+        button{min-height:40px;touch-action:manipulation}
         @media (max-width: 720px){
-            .container{padding:12px 10px 24px}
-            .app-card{border-radius:16px}
-            .tab-btn{padding:8px 10px;font-size:11px}
-            #leaderboardTable th,#leaderboardTable td{padding:0.5rem 0.2rem;font-size:0.82rem}
+            .container{padding:10px 10px 28px}
+            .app-card{border-radius:20px}
+            #mainApp>header{padding:8px 4px}
+            #mainApp>nav{margin:0 -10px 12px;padding:0 10px;overflow-x:auto;scrollbar-width:none}
+            #mainApp>nav::-webkit-scrollbar{display:none}
+            #mainApp>nav>div{flex-wrap:nowrap;width:max-content}
+            .tab-btn{padding:9px 14px;font-size:12px}
+            #mainApp>.app-card{padding:16px 12px;min-height:calc(100vh - 150px)}
+            #leaderboardTable th,#leaderboardTable td{padding:.62rem .12rem;font-size:clamp(.94rem,4.42vw,1.43rem);line-height:1.1}
+            #leaderboardTable th{font-size:clamp(.42rem,1.65vw,.54rem);letter-spacing:-.06em;padding-left:0;padding-right:0}
+            #leaderboardTable td:not(:first-child){font-size:clamp(.79rem,3.45vw,1.17rem);letter-spacing:-.06em}
+            .poker-button{flex:1;padding:.65rem .7rem;font-size:.85rem}
+            #mainApp>header .poker-button{flex:0 0 auto}
+            #totalWinLoss{font-size:.8rem}
+            #leaderboardActions button{width:42px;height:42px;padding:0;font-size:1.25rem;justify-content:center}
             .mobile-shell{max-width:100%}
         }
     </style>
@@ -79,7 +104,7 @@
 <body class="min-h-screen">
     <!-- 登录/注册模态框 -->
     <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="app-card rounded-lg p-6 w-96">
+        <div class="app-card rounded-2xl p-6 w-96 max-w-[calc(100vw-32px)]">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold" id="authTitle">登录</h2>
                 <button onclick="toggleAuthModal('login')" class="text-gray-400 hover:text-gray-300">&times;</button>
@@ -88,10 +113,10 @@
                 <!-- 登录表单 -->
                 <div id="loginForm">
                     <div class="mb-4">
-                        <label class="block text-gray-700 mb-2">用户名</label>
+                        <label class="block muted mb-2">用户名</label>
                         <input type="text" id="loginUsername" class="w-full px-3 py-2 border rounded">
                     </div>
-                    <button onclick="login()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">登录</button>
+                    <button onclick="login()" class="poker-button w-full">♠ 登录</button>
                     <p class="mt-2 text-sm">没有账号？<a onclick="toggleAuthModal('register')" class="text-blue-500">注册</a></p>
                 </div>
                 
@@ -101,7 +126,7 @@
                         <label class="block muted mb-2">用户名</label>
                         <input type="text" id="regUsername" class="w-full px-3 py-2 border rounded">
                     </div>
-                    <button onclick="register()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">注册</button>
+                    <button onclick="register()" class="poker-button w-full">♣ 注册并登录</button>
                     <p class="mt-2 text-sm">已有账号？<a onclick="toggleAuthModal('login')" class="text-blue-500">登录</a></p>
                 </div>
             </div>
@@ -113,9 +138,9 @@
         <!-- Top bar -->
         <header class="flex items-center justify-between py-2 mb-3">
             <div class="flex items-center gap-2">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-purple-600 to-indigo-500 text-white font-bold shadow-lg text-sm">R</div>
+                <div class="poker-brand-mark" aria-label="扑克">♣</div>
                 <div>
-                    <div class="text-base font-semibold">Accounting</div>
+                <div class="text-base font-extrabold tracking-wide">POKER TABLE</div>
                     <div class="text-xs muted"></div>
                 </div>
             </div>
@@ -134,7 +159,7 @@
                         <div class="text-xs muted">online</div>
                     </div>
                 </div>
-                <button onclick="logout()" class="px-3 py-1 text-sm rounded bg-gradient-to-br from-red-500 to-pink-500 text-white shadow-sm">退出</button>
+                <button onclick="logout()" class="poker-button danger">↗ 退出</button>
             </div>
         </header>
 
@@ -183,8 +208,8 @@
                                 <button type="button" class="active" data-mode="amount">金额</button>
                                 <button type="button" data-mode="chips">筹码</button>
                             </div>
-                            <button onclick="performPointsAction('buy_in')" class="bg-green-500 text-white px-3 py-1 text-sm rounded">Buy In</button>
-                            <button onclick="performPointsAction('cash_out')" class="bg-red-500 text-white px-3 py-1 text-sm rounded">Cash Out</button>
+                            <button onclick="performPointsAction('buy_in')" class="poker-button positive">＋ Buy In</button>
+                            <button onclick="performPointsAction('cash_out')" class="poker-button danger">− Cash Out</button>
                         </div>
                     </div>
 
@@ -196,7 +221,7 @@
                                 <button type="button" class="active" data-mode="set-current-amount">金额</button>
                                 <button type="button" data-mode="set-current-chips">筹码</button>
                             </div>
-                            <button onclick="performPointsAction('set_current', true)" class="bg-blue-500 text-white px-3 py-1 text-sm rounded">Set Current</button>
+                            <button onclick="performPointsAction('set_current', true)" class="poker-button secondary">♧ Set Current</button>
                         </div>
                     </div>
 
@@ -212,20 +237,28 @@
 
             <!-- Leaderboard Tab -->
             <div id="leaderboardTab" class="tab-content">
-                <h2 class="text-base font-bold mb-3">排行榜</h2>
-                <div class="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="loadLeaderboard()" class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600">🔄 Refresh</button>
-                        <button onclick="rebalanceScores()" class="bg-green-500 text-white px-3 py-1 text-sm rounded hover:bg-green-600">重新平衡</button>
-                        <button onclick="revertRebalance()" class="bg-red-500 text-white px-3 py-1 text-sm rounded hover:bg-red-600">撤销平衡</button>
+                <div class="leaderboard-heading flex items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="text-lg font-extrabold mb-1">♠ 排行榜</h2>
+                        <div class="text-xs muted">本场牌局 · 玩家结算</div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span id="totalWinLoss" class="font-bold text-sm"></span>
-                        <div class="segmented ml-2" id="leaderboardDisplayMode">
+                        <div class="segmented" id="leaderboardDisplayMode">
                             <button type="button" class="active" data-display="amount">金额</button>
                             <button type="button" data-display="chips">筹码</button>
                         </div>
                     </div>
+                </div>
+
+                <div class="metric-card rounded-2xl p-3 mb-3 flex items-center justify-between gap-2">
+                    <div><div class="text-[10px] muted mb-1">全场总赢亏</div><div id="totalWinLoss" class="font-extrabold text-lg"></div></div>
+                    <div class="text-2xl" aria-hidden="true">🂡</div>
+                </div>
+                <div id="leaderboardActions" class="mb-3 flex gap-2">
+                    <button id="leaderboardFullscreenBtn" onclick="toggleLeaderboardFullscreen()" title="全屏显示" aria-label="全屏显示" class="poker-button secondary !flex-none !w-[42px] !h-[42px] !min-h-0 !p-0 text-lg">⛶</button>
+                    <button onclick="loadLeaderboard()" title="刷新" aria-label="刷新" class="glass-panel flex items-center justify-center text-lg px-3 py-2 rounded-xl">↻</button>
+                    <button onclick="rebalanceScores()" title="重新平衡" aria-label="重新平衡" class="leaderboard-admin-action poker-button secondary !flex-none !w-[42px] !h-[42px] !min-h-0 !p-0 text-lg">⚖</button>
+                    <button onclick="revertRebalance()" title="撤销平衡" aria-label="撤销平衡" class="leaderboard-admin-action poker-button danger !flex-none !w-[42px] !h-[42px] !min-h-0 !p-0 text-lg">↶</button>
                 </div>
 
                 <div class="leaderboard-table-container">
@@ -251,6 +284,7 @@
                         </tfoot>
                     </table>
                 </div>
+                <div id="leaderboardFullscreenOverlay" aria-label="排行榜全屏"></div>
             </div>
 
             <!-- Finals Tab: ownership percentages and final results -->
@@ -287,8 +321,8 @@
             <div id="seatsTab" class="tab-content hidden">
                 <h2 class="text-base font-bold mb-3">座位分配</h2>
                 <div class="mb-3 flex gap-2 items-center">
-                    <button onclick="generateSeats()" id="generateSeatsBtn" class="bg-blue-500 text-white px-3 py-1 text-sm rounded hover:bg-blue-600 hidden">生成座位</button>
-                    <button onclick="refreshSeats()" class="bg-gray-500 text-white px-3 py-1 text-sm rounded hover:bg-gray-600">刷新座位</button>
+                    <button onclick="generateSeats()" id="generateSeatsBtn" class="poker-button positive hidden">♠ 生成座位</button>
+                    <button onclick="refreshSeats()" class="poker-button secondary">↻ 刷新座位</button>
                 </div>
 
                 <!-- Table container: moved down and responsive -->
@@ -534,6 +568,12 @@
             return Boolean(currentUser && currentUser.username.toLowerCase() === 'peng');
         }
 
+        function updateLeaderboardActions() {
+            document.querySelectorAll('.leaderboard-admin-action').forEach(button => {
+                button.classList.toggle('hidden', !isPengUser());
+            });
+        }
+
         function formatNumber(value) {
             const num = Number(value || 0);
             if (!Number.isFinite(num)) return '0.00';
@@ -587,6 +627,37 @@
             container.querySelectorAll('button[data-display]').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.display === active);
             });
+        }
+
+        function toggleLeaderboardFullscreen() {
+            const overlay = document.getElementById('leaderboardFullscreenOverlay');
+            const tableContainer = document.querySelector('#leaderboardTab .leaderboard-table-container');
+            const button = document.getElementById('leaderboardFullscreenBtn');
+            if (!overlay || !tableContainer || !button) return;
+            const isFullscreen = !overlay.classList.contains('active');
+            if (isFullscreen) {
+                overlay.appendChild(button);
+                overlay.appendChild(tableContainer);
+                overlay.classList.add('active');
+                overlay.addEventListener('click', exitLeaderboardOnTap);
+                const orientationLock = screen.orientation?.lock?.('landscape');
+                orientationLock?.catch(() => {});
+            } else {
+                overlay.classList.remove('active');
+                document.querySelector('#leaderboardTab').appendChild(tableContainer);
+                document.getElementById('leaderboardActions').prepend(button);
+                overlay.removeEventListener('click', exitLeaderboardOnTap);
+                screen.orientation?.unlock?.();
+            }
+            document.body.classList.toggle('leaderboard-is-fullscreen', isFullscreen);
+            button.textContent = isFullscreen ? '⤢' : '⛶';
+            button.title = isFullscreen ? '退出全屏' : '全屏显示';
+            button.setAttribute('aria-label', button.title);
+        }
+
+        function exitLeaderboardOnTap(event) {
+            if (event.target.closest('button')) return;
+            if (document.getElementById('leaderboardFullscreenOverlay')?.classList.contains('active')) toggleLeaderboardFullscreen();
         }
 
         function bindModeButtons() {
@@ -978,6 +1049,7 @@
 
         async function loadLeaderboard() {
             try {
+                updateLeaderboardActions();
                 const response = await fetch('/api/scores');
                 const data = await response.json();
                 const body = document.querySelector('#leaderboardTable tbody');
@@ -1005,10 +1077,15 @@
                 setLeaderboardNumber(document.getElementById('totalFinalValue'), sums.win_loss);
                 const label = document.getElementById('totalWinLoss');
                 if (label) {
-                    label.replaceChildren(document.createTextNode('总赢亏：'));
-                    const number = document.createElement('span');
-                    setLeaderboardNumber(number, data.total_win_loss || 0);
-                    label.append(number, document.createTextNode(leaderboardDisplayMode === 'chips' ? ' 筹码' : ' 金额'));
+                    const totalWinLoss = Number(data.total_win_loss || 0);
+                    if (totalWinLoss === 0) {
+                        label.textContent = '分毫不差';
+                    } else {
+                        label.replaceChildren(document.createTextNode('总赢亏：'));
+                        const number = document.createElement('span');
+                        setLeaderboardNumber(number, totalWinLoss);
+                        label.append(number, document.createTextNode(leaderboardDisplayMode === 'chips' ? ' 筹码' : ' 金额'));
+                    }
                 }
             } catch (error) { console.error('加载排行榜失败', error); }
         }
@@ -1251,21 +1328,13 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    currentUser = data.user;
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-
-                    document.getElementById('authModal').classList.add('hidden');
-                    document.getElementById('mainApp').classList.remove('hidden');
-                    document.getElementById('currentUser').textContent = `当前用户: ${displayUsername(currentUser.username)}`;
-
-                    if (isPengUser()) {
-                        document.getElementById('adminTabBtn').classList.remove('hidden');
-                        document.getElementById('generateSeatsBtn').classList.remove('hidden');
-                    }
-
-                    initWebSocket();
-                    loadAllData();
+                    enterApp(data.user);
                 } else {
+                    if (/不存在|未注册|not found|does not exist/i.test(data.message || '')) {
+                        const shouldRegister = confirm(`用户 ${username} 不存在。\n\n确定：注册并登录\n取消：返回登录页面`);
+                        if (shouldRegister) await registerUsername(username);
+                        return;
+                    }
                     alert(data.message || '登录失败');
                 }
             } catch (error) {
@@ -1282,6 +1351,10 @@
                 return;
             }
 
+            await registerUsername(username);
+        }
+
+        async function registerUsername(username) {
             try {
                 const response = await fetch('/register', {
                     method: 'POST',
@@ -1290,8 +1363,14 @@
                 });
                 const data = await response.json();
                 if (data.success) {
-                    alert('注册成功，请登录');
-                    toggleAuthModal('login');
+                    const loginResponse = await fetch('/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `username=${encodeURIComponent(username)}`
+                    });
+                    const loginData = await loginResponse.json();
+                    if (!loginData.success) throw new Error(loginData.message || '注册成功，但自动登录失败');
+                    enterApp(loginData.user);
                 } else {
                     alert(data.message || '注册失败');
                 }
@@ -1299,6 +1378,20 @@
                 console.error('register failed', error);
                 alert('注册失败，请稍后重试');
             }
+        }
+
+        function enterApp(user) {
+            currentUser = user;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('currentUser').textContent = `当前用户: ${displayUsername(currentUser.username)}`;
+            if (isPengUser()) {
+                document.getElementById('adminTabBtn').classList.remove('hidden');
+                document.getElementById('generateSeatsBtn').classList.remove('hidden');
+            }
+            initWebSocket();
+            loadAllData();
         }
 
         function logout() {
